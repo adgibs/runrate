@@ -417,10 +417,59 @@
 
   /* Responsive */
   @media (max-width: 768px) {
-    body { padding: 10px; }
-    h1 { font-size: 1.4rem; }
-    .filters-bar { flex-direction: column; align-items: stretch; }
-    .filter-group { flex-wrap: wrap; }
+    body { padding: 8px; }
+    h1 { font-size: 1.3rem; }
+    .subtitle { font-size: 0.82rem; margin-bottom: 16px; }
+
+    /* Settings: 2 columns on mobile */
+    .settings-panel { padding: 16px; }
+    .settings-grid { grid-template-columns: 1fr 1fr; gap: 10px; }
+
+    /* Filters: stack vertically */
+    .filters-bar { flex-direction: column; align-items: stretch; padding: 12px 16px; gap: 10px; }
+    .filter-group { flex-wrap: wrap; gap: 6px; }
+    .filter-btn { padding: 6px 12px; font-size: 0.8rem; }
+    .filter-select { font-size: 0.8rem; flex: 1; min-width: 0; }
+    .search-input { min-width: 0; width: 100%; }
+
+    /* Force card view on mobile — hide table */
+    #tableContainer { display: none !important; }
+    #cardContainer { display: block !important; }
+    .view-toggle { display: none; }
+
+    /* Cards: single column */
+    .card-grid { grid-template-columns: 1fr; gap: 12px; padding: 12px; }
+    .car-card { padding: 14px; }
+    .car-card .card-name { font-size: 0.88rem; }
+
+    /* Compare panel */
+    .compare-panel { padding: 14px; }
+    .compare-row .compare-cell { padding: 6px 8px; font-size: 0.78rem; }
+    .compare-row .compare-label { padding: 6px 8px; font-size: 0.72rem; }
+    .compare-bar { gap: 6px; }
+    .compare-chip { font-size: 0.75rem; padding: 3px 10px; }
+
+    /* Charts */
+    .charts-section { padding: 14px; }
+    .charts-tabs { flex-wrap: wrap; gap: 4px; }
+    .charts-tabs button { padding: 5px 10px; font-size: 0.75rem; }
+    .chart-canvas-wrap { max-height: 400px; }
+
+    /* Data management buttons */
+    .filter-group .filter-btn { flex: 1; text-align: center; }
+
+    /* Add car form */
+    .add-car-form { padding: 16px !important; }
+    .add-car-form .settings-grid { grid-template-columns: 1fr 1fr; }
+
+    /* Modal: full width on mobile */
+    .modal-panel { max-width: 100vw !important; width: 100% !important; padding: 16px !important; margin: 0 !important; border-radius: 12px 12px 0 0 !important; max-height: 90vh; }
+    .detail-sections { grid-template-columns: 1fr !important; }
+  }
+
+  @media (max-width: 400px) {
+    .settings-grid { grid-template-columns: 1fr; }
+    .card-grid { padding: 8px; }
   }
 
   .collapsible-content { overflow: hidden; transition: max-height 0.3s ease; }
@@ -1915,7 +1964,7 @@ function updateEditSSAvg() {
 }
 
 // ============ VIEW TOGGLE ============
-let currentView = 'table';
+let currentView = window.innerWidth <= 768 ? 'cards' : 'table';
 
 function setView(view) {
   currentView = view;

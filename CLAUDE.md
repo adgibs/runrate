@@ -12,13 +12,14 @@ Andrew (adgibs14@gmail.com). Building RunRate, a 3-year car cost of ownership co
 | File | Purpose |
 |------|---------|
 | `outputs/car-cost-calculator.html` | Main working file — all CSS, HTML, JS in one file |
-| `outputs/index.html` | GitHub Pages copy — always sync after changes with `cp` |
+| `outputs/index.html` | Copy in outputs (legacy) |
+| `index.html` | **Repo root copy — this is what GitHub Pages serves** |
 
 ## GitHub
 - Repo: `adgibs/runrate` on GitHub
 - Live: https://adgibs.github.io/runrate
 - Claude can't push — Andrew runs git commands locally
-- Push command: `cd "/Users/andrew/0. Swift Coding/carpicker" && git add -A && git commit -m "message" && git push`
+- Push shortcut: `runpush "message"` (alias in Andrew's .zshrc)
 
 ## Architecture
 - Single HTML file, no build step, no frameworks
@@ -49,6 +50,7 @@ Andrew (adgibs14@gmail.com). Building RunRate, a 3-year car cost of ownership co
 
 ## Preferences
 - Andrew sends screenshots for visual feedback — this works well
-- Iterate quickly, validate JS syntax after each edit, sync index.html
+- Iterate quickly, validate JS syntax after each edit
+- After changes: `cp outputs/car-cost-calculator.html outputs/index.html && cp outputs/car-cost-calculator.html index.html`
 - Keep everything in one file unless it gets unmanageable
 → Details: memory/projects/runrate.md
