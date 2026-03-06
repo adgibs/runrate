@@ -1,0 +1,2578 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RunRate — 3-Year Car Cost Calculator (UK)</title>
+<meta name="description" content="Compare the true 3-year cost of owning any car in the UK. Includes depreciation, fuel, VED, insurance, salary sacrifice and more.">
+<meta name="theme-color" content="#1a56db">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏎️</text></svg>">
+<style>
+  :root {
+    --bg: #f5f7fa;
+    --card: #ffffff;
+    --primary: #1a56db;
+    --primary-light: #e8eefb;
+    --green: #059669;
+    --green-light: #d1fae5;
+    --amber: #d97706;
+    --amber-light: #fef3c7;
+    --red: #dc2626;
+    --red-light: #fee2e2;
+    --text: #1e293b;
+    --text-muted: #64748b;
+    --border: #e2e8f0;
+    --shadow: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.06);
+    --radius: 10px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.5;
+    padding: 20px;
+  }
+  .container { max-width: 1500px; margin: 0 auto; }
+  h1 { font-size: 1.8rem; font-weight: 700; margin-bottom: 4px; }
+  .subtitle { color: var(--text-muted); font-size: 0.95rem; margin-bottom: 24px; }
+
+  /* Settings Panel */
+  .settings-panel {
+    background: var(--card);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 24px;
+    margin-bottom: 24px;
+  }
+  .settings-panel h2 {
+    font-size: 1.1rem;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    user-select: none;
+  }
+  .settings-panel h2 .arrow { transition: transform 0.2s; display: inline-block; }
+  .settings-panel h2 .arrow.collapsed { transform: rotate(-90deg); }
+  .settings-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+  }
+  .setting-group label {
+    display: block;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 4px;
+  }
+  .setting-group input {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1.5px solid var(--border);
+    border-radius: 6px;
+    font-size: 0.95rem;
+    transition: border-color 0.2s;
+  }
+  .setting-group input:focus {
+    outline: none;
+    border-color: var(--primary);
+  }
+  .setting-group .unit { font-size: 0.8rem; color: var(--text-muted); margin-top: 2px; }
+
+  /* Filters */
+  .filters-bar {
+    background: var(--card);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 16px 24px;
+    margin-bottom: 24px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 16px;
+  }
+  .filter-group { display: flex; align-items: center; gap: 8px; }
+  .filter-group label { font-size: 0.85rem; font-weight: 600; color: var(--text-muted); white-space: nowrap; }
+  .filter-btn {
+    padding: 5px 14px;
+    border: 1.5px solid var(--border);
+    border-radius: 20px;
+    background: white;
+    cursor: pointer;
+    font-size: 0.85rem;
+    transition: all 0.15s;
+  }
+  .filter-btn:hover { border-color: var(--primary); color: var(--primary); }
+  .filter-btn.active { background: var(--primary); color: white; border-color: var(--primary); }
+  .filter-select {
+    padding: 5px 12px;
+    border: 1.5px solid var(--border);
+    border-radius: 6px;
+    font-size: 0.85rem;
+    background: white;
+  }
+  .search-input {
+    padding: 6px 12px;
+    border: 1.5px solid var(--border);
+    border-radius: 6px;
+    font-size: 0.85rem;
+    min-width: 180px;
+  }
+  .search-input:focus { outline: none; border-color: var(--primary); }
+
+  /* Table */
+  .table-container {
+    background: var(--card);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    overflow-x: auto;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.82rem;
+    table-layout: fixed;
+  }
+  thead th {
+    background: #f8fafc;
+    padding: 10px 6px;
+    text-align: left;
+    font-weight: 600;
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    color: var(--text-muted);
+    white-space: nowrap;
+    overflow: hidden;
+    border-bottom: 2px solid var(--border);
+    cursor: pointer;
+    white-space: nowrap;
+    user-select: none;
+    position: sticky;
+    top: 0;
+    z-index: 2;
+  }
+  thead th:hover { color: var(--primary); }
+  thead th .sort-arrow { margin-left: 4px; font-size: 0.7rem; }
+  tbody tr { border-bottom: 1px solid var(--border); transition: background 0.1s; }
+  tbody tr:hover { background: #f8fafc; }
+  tbody tr:last-child { border-bottom: none; }
+  td { padding: 8px 6px; white-space: nowrap; }
+  td.car-name { font-weight: 600; white-space: normal; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+  /* Column widths: ★, #, Car, Fuel, Econ, Price, Deprec, Tax, Fuel$, Service, Insure, Other, Total, /Month, £/mi, X */
+  th:nth-child(1), td:nth-child(1) { width: 4%; text-align: center; }
+  th:nth-child(2), td:nth-child(2) { width: 2%; }
+  th:nth-child(3), td:nth-child(3) { width: 14%; }
+  th:nth-child(4), td:nth-child(4) { width: 5%; }
+  th:nth-child(5), td:nth-child(5) { width: 5%; }
+  th:nth-child(6), td:nth-child(6) { width: 6%; }
+  th:nth-child(7), td:nth-child(7) { width: 6%; }
+  th:nth-child(8), td:nth-child(8) { width: 5%; }
+  th:nth-child(9), td:nth-child(9) { width: 6%; }
+  th:nth-child(10), td:nth-child(10) { width: 6%; }
+  th:nth-child(11), td:nth-child(11) { width: 6%; }
+  th:nth-child(12), td:nth-child(12) { width: 6%; }
+  th:nth-child(13), td:nth-child(13) { width: 9%; }
+  th:nth-child(14), td:nth-child(14) { width: 6%; }
+  th:nth-child(15), td:nth-child(15) { width: 5%; }
+  th:nth-child(16), td:nth-child(16) { width: 2%; }
+  .fuel-badge {
+    display: inline-block;
+    padding: 2px 10px;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 600;
+  }
+  .fuel-badge.electric { background: var(--green-light); color: var(--green); }
+  .fuel-badge.petrol { background: var(--amber-light); color: var(--amber); }
+  .fuel-badge.phev { background: #dbeafe; color: #1d4ed8; }
+  /* Price override */
+  .price-cell { position: relative; cursor: pointer; }
+  .price-cell.overridden { background: #fef3c7 !important; font-weight: 700; }
+  .price-cell .original-price { text-decoration: line-through; font-size: 0.72rem; color: var(--text-muted); display: block; }
+  .price-cell .reset-price { position: absolute; top: 2px; right: 2px; font-size: 0.65rem; color: var(--red); cursor: pointer; background: var(--red-light); border: none; border-radius: 3px; padding: 1px 4px; line-height: 1; }
+  .price-input { width: 80px; padding: 2px 4px; border: 2px solid var(--primary); border-radius: 4px; font-size: 0.82rem; }
+  /* Star ratings */
+  .star-rate { display: inline-flex; gap: 0; cursor: pointer; user-select: none; font-size: 0.9rem; }
+  .star-rate span { color: #d1d5db; transition: color 0.12s; padding: 0 1px; }
+  .star-rate span.lit { color: #f59e0b; }
+  .star-rate:hover span { color: #f59e0b; }
+  .star-rate span:hover ~ span { color: #d1d5db; }
+  /* Colour-coded cost cells */
+  .cost-green { background: rgba(5, 150, 105, 0.08); }
+  .cost-lime { background: rgba(132, 204, 22, 0.08); }
+  .cost-amber { background: rgba(217, 119, 6, 0.08); }
+  .cost-orange { background: rgba(249, 115, 22, 0.10); }
+  .cost-red { background: rgba(220, 38, 38, 0.10); }
+
+  /* View toggle */
+  .view-toggle { display: flex; gap: 4px; }
+  .view-toggle button { padding: 5px 12px; border: 1.5px solid var(--border); border-radius: 6px; background: white; cursor: pointer; font-size: 0.78rem; font-weight: 600; color: var(--text-muted); }
+  .view-toggle button.active { background: var(--primary); color: white; border-color: var(--primary); }
+
+  /* Card view */
+  .card-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px; padding: 16px; }
+  .car-card {
+    background: white; border-radius: var(--radius); border: 1.5px solid var(--border);
+    padding: 16px; cursor: pointer; transition: all 0.15s; position: relative;
+  }
+  .car-card:hover { border-color: var(--primary); box-shadow: 0 4px 12px rgba(26, 86, 219, 0.12); transform: translateY(-1px); }
+  .car-card.compare-selected { border-color: #8b5cf6; border-width: 2px; box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.15); }
+  .car-card .card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; }
+  .car-card .card-name { font-weight: 700; font-size: 0.92rem; line-height: 1.3; flex: 1; }
+  .car-card .card-badges { display: flex; gap: 4px; flex-wrap: wrap; margin-bottom: 8px; }
+  .car-card .card-cost-bar { height: 6px; border-radius: 3px; background: var(--border); margin: 10px 0 6px; position: relative; overflow: hidden; }
+  .car-card .card-cost-fill { height: 100%; border-radius: 3px; transition: width 0.3s; }
+  .car-card .card-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 8px; }
+  .car-card .card-stat { font-size: 0.78rem; }
+  .car-card .card-stat .stat-label { color: var(--text-muted); font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.3px; }
+  .car-card .card-stat .stat-value { font-weight: 700; font-size: 0.95rem; }
+  .car-card .card-total { text-align: center; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border); }
+  .car-card .card-total .total-value { font-size: 1.3rem; font-weight: 800; }
+  .car-card .card-total .total-sub { font-size: 0.75rem; color: var(--text-muted); }
+  .car-card .card-compare-check { position: absolute; top: 10px; right: 10px; width: 22px; height: 22px; border-radius: 50%; border: 2px solid var(--border); display: flex; align-items: center; justify-content: center; font-size: 0.7rem; background: white; transition: all 0.15s; }
+  .car-card .card-compare-check.checked { background: #8b5cf6; border-color: #8b5cf6; color: white; }
+
+  /* Compare panel */
+  .compare-panel {
+    background: white; border-radius: var(--radius); box-shadow: var(--shadow);
+    padding: 20px; margin-bottom: 24px; display: none;
+  }
+  .compare-panel.visible { display: block; }
+  .compare-panel h3 { font-size: 1rem; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+  .compare-grid { display: grid; gap: 0; }
+  .compare-row { display: grid; border-bottom: 1px solid var(--border); }
+  .compare-row:last-child { border-bottom: none; }
+  .compare-row .compare-label { font-size: 0.78rem; font-weight: 600; color: var(--text-muted); padding: 8px 12px; background: #f8fafc; text-transform: uppercase; letter-spacing: 0.3px; }
+  .compare-row .compare-cell { padding: 8px 12px; font-size: 0.85rem; text-align: center; }
+  .compare-row .compare-cell.best { background: rgba(5, 150, 105, 0.08); font-weight: 700; color: var(--green); }
+  .compare-row .compare-cell.worst { background: rgba(220, 38, 38, 0.06); color: var(--red); }
+  .compare-bar { display: flex; gap: 8px; margin-bottom: 16px; align-items: center; flex-wrap: wrap; }
+  .compare-chip { display: inline-flex; align-items: center; gap: 6px; padding: 4px 12px; border-radius: 16px; background: #f3e8ff; color: #7c3aed; font-size: 0.82rem; font-weight: 600; }
+  .compare-chip button { background: none; border: none; cursor: pointer; color: #7c3aed; font-size: 1rem; padding: 0; line-height: 1; }
+
+  /* Edit form in modal */
+  .edit-form-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-top: 12px; }
+  .edit-field label { display: block; font-size: 0.72rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase; margin-bottom: 2px; }
+  .edit-field input, .edit-field select { width: 100%; padding: 6px 8px; border: 1.5px solid var(--border); border-radius: 6px; font-size: 0.85rem; }
+  .edit-field input:focus, .edit-field select:focus { outline: none; border-color: var(--primary); }
+  .edit-actions { margin-top: 12px; display: flex; gap: 8px; }
+  .edit-actions button { padding: 8px 20px; border-radius: 6px; border: none; cursor: pointer; font-weight: 600; font-size: 0.85rem; }
+  .edit-save { background: var(--primary); color: white; }
+  .edit-save:hover { opacity: 0.9; }
+  .edit-cancel { background: var(--border); color: var(--text); }
+  .modal-edit-btn { position: absolute; top: 16px; right: 56px; width: 34px; height: 34px; border-radius: 50%; border: 1.5px solid var(--border); background: white; cursor: pointer; font-size: 0.9rem; display: flex; align-items: center; justify-content: center; transition: all 0.15s; z-index: 2; }
+  .modal-edit-btn:hover { background: var(--primary-light); color: var(--primary); border-color: var(--primary); }
+  .fuel-badge.diesel { background: var(--red-light); color: #b91c1c; }
+  .rank-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    font-size: 0.8rem;
+    font-weight: 700;
+  }
+  .rank-1 { background: #fef9c3; color: #a16207; }
+  .rank-2 { background: #f1f5f9; color: #475569; }
+  .rank-3 { background: #fed7aa; color: #c2410c; }
+  .rank-other { background: #f1f5f9; color: var(--text-muted); }
+  .total-cost { font-weight: 700; font-size: 1rem; color: var(--primary); }
+  .delete-btn {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    font-size: 1.1rem;
+    padding: 2px 6px;
+    border-radius: 4px;
+    transition: all 0.15s;
+  }
+  .delete-btn:hover { background: var(--red-light); color: var(--red); }
+
+  /* Add Car Panel */
+  .add-car-panel {
+    background: var(--card);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 24px;
+    margin-top: 24px;
+  }
+  .add-car-panel h2 {
+    font-size: 1.1rem;
+    margin-bottom: 16px;
+    cursor: pointer;
+    user-select: none;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .add-form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+  .form-field label {
+    display: block;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    margin-bottom: 3px;
+  }
+  .form-field input, .form-field select {
+    width: 100%;
+    padding: 7px 10px;
+    border: 1.5px solid var(--border);
+    border-radius: 6px;
+    font-size: 0.9rem;
+  }
+  .form-field input:focus, .form-field select:focus {
+    outline: none;
+    border-color: var(--primary);
+  }
+  .btn-add {
+    padding: 10px 28px;
+    background: var(--primary);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  .btn-add:hover { background: #1347b8; }
+  .btn-secondary {
+    padding: 10px 28px;
+    background: white;
+    color: var(--text);
+    border: 1.5px solid var(--border);
+    border-radius: 6px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    margin-left: 8px;
+  }
+  .btn-secondary:hover { border-color: var(--primary); color: var(--primary); }
+
+  /* Summary cards */
+  .summary-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+  .summary-card {
+    background: var(--card);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 16px 20px;
+  }
+  .summary-card .label { font-size: 0.78rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.4px; }
+  .summary-card .value { font-size: 1.4rem; font-weight: 700; margin-top: 4px; }
+  .summary-card .detail { font-size: 0.82rem; color: var(--text-muted); margin-top: 2px; }
+  .cheapest { border-left: 4px solid var(--green); }
+  .priciest { border-left: 4px solid var(--red); }
+  .avg-card { border-left: 4px solid var(--primary); }
+  .saving-card { border-left: 4px solid var(--amber); }
+
+  /* Tooltip */
+  .info-tip {
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: var(--border);
+    color: var(--text-muted);
+    font-size: 0.7rem;
+    text-align: center;
+    line-height: 16px;
+    cursor: help;
+    position: relative;
+  }
+  .info-tip:hover::after {
+    content: attr(data-tip);
+    position: absolute;
+    bottom: 120%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--text);
+    color: white;
+    padding: 6px 10px;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    white-space: nowrap;
+    z-index: 10;
+    font-weight: 400;
+  }
+
+  /* Responsive */
+  @media (max-width: 768px) {
+    body { padding: 10px; }
+    h1 { font-size: 1.4rem; }
+    .filters-bar { flex-direction: column; align-items: stretch; }
+    .filter-group { flex-wrap: wrap; }
+  }
+
+  .collapsible-content { overflow: hidden; transition: max-height 0.3s ease; }
+  .hidden { display: none; }
+
+  /* Charts section */
+  .charts-section {
+    background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow);
+    padding: 20px; margin-bottom: 24px;
+  }
+  .charts-section h2 { font-size: 1rem; margin-bottom: 16px; cursor: pointer; user-select: none; display: flex; align-items: center; gap: 8px; }
+  .charts-tabs { display: flex; gap: 4px; margin-bottom: 16px; }
+  .charts-tabs button { padding: 6px 16px; border: 1.5px solid var(--border); border-radius: 20px; background: white; cursor: pointer; font-size: 0.82rem; font-weight: 600; color: var(--text-muted); transition: all 0.15s; }
+  .charts-tabs button.active { background: var(--primary); color: white; border-color: var(--primary); }
+  .chart-canvas-wrap { position: relative; width: 100%; overflow: auto; max-height: 600px; }
+  .chart-canvas-wrap canvas { display: block; }
+
+  /* Clickable rows */
+  tbody tr.car-row { cursor: pointer; }
+  tbody tr.car-row:hover { background: #eef2ff; }
+
+  /* Modal overlay */
+  .modal-backdrop {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.55);
+    z-index: 1000;
+    justify-content: center;
+    align-items: flex-start;
+    padding: 40px 20px;
+    overflow-y: auto;
+  }
+  .modal-backdrop.open { display: flex; }
+  .modal-panel {
+    background: var(--card);
+    border-radius: 14px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.25);
+    width: 100%;
+    max-width: 800px;
+    padding: 28px;
+    position: relative;
+    animation: modalIn 0.2s ease;
+  }
+  @keyframes modalIn {
+    from { opacity: 0; transform: translateY(20px) scale(0.97); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+  }
+  .modal-close {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: white;
+    cursor: pointer;
+    font-size: 1rem;
+    color: var(--text-muted);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s;
+    z-index: 2;
+  }
+  .modal-close:hover { background: var(--red-light); color: var(--red); border-color: var(--red); }
+
+  .detail-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+    gap: 12px;
+    padding-right: 40px;
+  }
+  .detail-title { font-size: 1.25rem; font-weight: 700; color: var(--text); }
+  .detail-subtitle { font-size: 0.85rem; color: var(--text-muted); margin-top: 2px; }
+  .detail-total-box {
+    background: var(--primary);
+    color: white;
+    padding: 12px 20px;
+    border-radius: 10px;
+    text-align: center;
+    flex-shrink: 0;
+  }
+  .detail-total-box .dtl { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.5px; opacity: 0.85; }
+  .detail-total-box .dtv { font-size: 1.5rem; font-weight: 700; }
+  .detail-total-box .dtm { font-size: 0.82rem; opacity: 0.85; }
+
+  .detail-sections {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+  @media (max-width: 860px) { .modal-panel { max-width: 96vw; padding: 20px; } .detail-sections { grid-template-columns: 1fr; } }
+
+  .detail-section {
+    background: #f8fafc;
+    border-radius: 8px;
+    padding: 14px 16px;
+  }
+  .detail-section h3 {
+    font-size: 0.76rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-muted);
+    margin-bottom: 10px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .calc-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    padding: 5px 0;
+    font-size: 0.84rem;
+    gap: 12px;
+  }
+  .calc-row + .calc-row { border-top: 1px dashed #e2e8f0; }
+  .calc-label { color: var(--text-muted); flex: 1; min-width: 0; }
+  .calc-value { font-weight: 600; text-align: right; flex-shrink: 0; white-space: nowrap; }
+  .calc-formula {
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    background: #e8ecf1;
+    padding: 1px 6px;
+    border-radius: 3px;
+    margin-top: 2px;
+    display: inline-block;
+  }
+  .calc-row-total {
+    border-top: 2px solid var(--border) !important;
+    padding-top: 8px;
+    margin-top: 4px;
+  }
+  .calc-row-total .calc-label { font-weight: 700; color: var(--text); }
+  .calc-row-total .calc-value { font-weight: 700; color: var(--primary); font-size: 0.95rem; }
+
+  /* Cost bar chart */
+  .cost-bar-chart { margin-top: 10px; }
+  .cost-bar-row {
+    display: flex;
+    align-items: center;
+    margin-bottom: 5px;
+    font-size: 0.8rem;
+  }
+  .cost-bar-label { width: 86px; color: var(--text-muted); flex-shrink: 0; font-size: 0.78rem; }
+  .cost-bar-track { flex: 1; height: 26px; background: #eef2ff; border-radius: 4px; position: relative; display: flex; align-items: center; }
+  .cost-bar-fill { height: 100%; border-radius: 4px; transition: width 0.4s ease; position: absolute; left: 0; top: 0; }
+  .cost-bar-amount { position: relative; z-index: 1; font-size: 0.74rem; font-weight: 600; white-space: nowrap; padding-left: 8px; }
+  .cost-bar-pct { width: 44px; text-align: right; font-weight: 600; color: var(--text-muted); flex-shrink: 0; margin-left: 6px; font-size: 0.78rem; }
+
+  .assumption-tags { margin-top: 10px; display: flex; flex-wrap: wrap; gap: 4px; }
+  .assumption-tag {
+    display: inline-block;
+    background: #f1f5f9;
+    color: var(--text-muted);
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-size: 0.74rem;
+  }
+  .assumption-tag strong { color: var(--text); }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>🏎️ RunRate</h1>
+  <p class="subtitle">The true 3-year cost of any car — UK fuel, VED, insurance, salary sacrifice &amp; more</p>
+
+  <!-- Settings -->
+  <div class="settings-panel">
+    <h2 onclick="toggleSection('settings')"><span class="arrow" id="settings-arrow">&#x25BC;</span> Assumptions &amp; Settings</h2>
+    <div id="settings-content" class="collapsible-content">
+      <div class="settings-grid">
+        <div class="setting-group">
+          <label>Annual Mileage</label>
+          <input type="number" id="annualMileage" value="10000" min="1000" max="50000" step="500" onchange="recalcAll()">
+          <div class="unit">miles per year</div>
+        </div>
+        <div class="setting-group">
+          <label>Petrol Price</label>
+          <input type="number" id="petrolPrice" value="1.42" min="0.50" max="3.00" step="0.01" onchange="recalcAll()">
+          <div class="unit">£ per litre</div>
+        </div>
+        <div class="setting-group">
+          <label>Diesel Price</label>
+          <input type="number" id="dieselPrice" value="1.48" min="0.50" max="3.00" step="0.01" onchange="recalcAll()">
+          <div class="unit">£ per litre</div>
+        </div>
+        <div class="setting-group">
+          <label>Electricity Price</label>
+          <input type="number" id="elecPrice" value="0.245" min="0.05" max="1.00" step="0.005" onchange="recalcAll()">
+          <div class="unit">£ per kWh (home charging)</div>
+        </div>
+        <div class="setting-group">
+          <label>MOT Cost</label>
+          <input type="number" id="motCost" value="55" min="0" max="100" step="5" onchange="recalcAll()">
+          <div class="unit">£ (required from year 3)</div>
+        </div>
+        <div class="setting-group">
+          <label>Insurance Multiplier</label>
+          <input type="number" id="insuranceMult" value="1.0" min="0.5" max="2.0" step="0.1" onchange="recalcAll()">
+          <div class="unit">1.0 = average, adjust for your profile</div>
+        </div>
+        <div class="setting-group">
+          <label>Breakdown Cover (£/yr)</label>
+          <input type="number" id="breakdownCover" value="80" min="0" max="500" step="10" onchange="recalcAll()">
+          <div class="unit">annual RAC/AA etc.</div>
+        </div>
+        <div class="setting-group">
+          <label>Congestion Charge</label>
+          <select id="congestionZone" onchange="recalcAll()">
+            <option value="none">Not applicable</option>
+            <option value="london">London (£15/day)</option>
+            <option value="ulez">ULEZ only (free if compliant)</option>
+          </select>
+          <div class="unit">daily commuting charge zone</div>
+        </div>
+        <div class="setting-group">
+          <label>Congestion Days/yr</label>
+          <input type="number" id="congestionDays" value="220" min="0" max="365" step="5" onchange="recalcAll()">
+          <div class="unit">working days entering zone</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Summary Cards -->
+  <div class="summary-cards" id="summaryCards"></div>
+
+  <!-- Charts -->
+  <div class="charts-section">
+    <h2 onclick="toggleSection('charts')"><span class="arrow" id="charts-arrow">&#x25BC;</span> Charts</h2>
+    <div id="charts-content" class="collapsible-content">
+      <div class="charts-tabs">
+        <button class="active" onclick="switchChart('stacked', this)">Cost Breakdown</button>
+        <button onclick="switchChart('scatter', this)">Cost vs Efficiency</button>
+        <button onclick="switchChart('timeline', this)">Monthly Timeline</button>
+      </div>
+      <div class="chart-canvas-wrap">
+        <canvas id="chartCanvas" width="900" height="450"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- Filters -->
+  <div class="filters-bar">
+    <div class="filter-group">
+      <label>Fuel Type:</label>
+      <button class="filter-btn active" data-filter="all" onclick="setFuelFilter('all', this)">All</button>
+      <button class="filter-btn" data-filter="electric" onclick="setFuelFilter('electric', this)">Electric</button>
+      <button class="filter-btn" data-filter="petrol" onclick="setFuelFilter('petrol', this)">Petrol</button>
+      <button class="filter-btn" data-filter="phev" onclick="setFuelFilter('phev', this)">PHEV</button>
+      <button class="filter-btn" data-filter="diesel" onclick="setFuelFilter('diesel', this)">Diesel</button>
+    </div>
+    <div class="filter-group">
+      <label>Scheme:</label>
+      <select class="filter-select" id="schemeFilter" onchange="applyFilters()">
+        <option value="all">All Cars</option>
+        <option value="salsac">Salary Sacrifice Only</option>
+        <option value="standard">Standard Only</option>
+      </select>
+    </div>
+    <div class="filter-group" style="gap:4px;">
+      <button class="filter-btn" id="favFilter1" onclick="setStarFilter(1)" title="Show 1+ star">★</button>
+      <button class="filter-btn" id="favFilter2" onclick="setStarFilter(2)" title="Show 2+ stars">★★</button>
+      <button class="filter-btn" id="favFilter3" onclick="setStarFilter(3)" title="Show 3 stars only">★★★</button>
+    </div>
+    <div class="filter-group">
+      <label>Manufacturer:</label>
+      <select class="filter-select" id="makeFilter" onchange="applyFilters()">
+        <option value="all">All</option>
+      </select>
+    </div>
+    <div class="filter-group">
+      <label>Body Type:</label>
+      <select class="filter-select" id="bodyFilter" onchange="applyFilters()">
+        <option value="all">All</option>
+        <option value="hatchback">Hatchback</option>
+        <option value="saloon">Saloon</option>
+        <option value="suv">SUV / Crossover</option>
+        <option value="estate">Estate</option>
+      </select>
+    </div>
+    <div class="filter-group">
+      <label>Max Price:</label>
+      <select class="filter-select" id="priceFilter" onchange="applyFilters()">
+        <option value="999999">Any</option>
+        <option value="25000">Up to £25,000</option>
+        <option value="30000">Up to £30,000</option>
+        <option value="35000">Up to £35,000</option>
+        <option value="40000">Up to £40,000</option>
+        <option value="50000">Up to £50,000</option>
+        <option value="60000">Up to £60,000</option>
+        <option value="80000">Up to £80,000</option>
+        <option value="100000">Up to £100,000</option>
+      </select>
+    </div>
+    <div class="filter-group" style="margin-left:auto;">
+      <input type="text" class="search-input" id="searchInput" placeholder="Search cars..." oninput="applyFilters()">
+    </div>
+    <div class="filter-group" id="resetPricesBtn" style="display:none;">
+      <button class="filter-btn" onclick="resetAllPrices()" style="background:var(--amber-light);color:var(--amber);border-color:var(--amber);">Reset All Prices</button>
+    </div>
+    <div class="filter-group" style="margin-left:auto;gap:4px;">
+      <button class="filter-btn" onclick="exportData()" style="font-size:0.72rem;color:var(--primary);border-color:var(--primary);" title="Download your cars, favourites & settings as a file">Export</button>
+      <label class="filter-btn" style="font-size:0.72rem;color:var(--green);border-color:var(--green);cursor:pointer;" title="Load cars, favourites & settings from a file">Import<input type="file" accept=".json" onchange="importData(event)" style="display:none;"></label>
+      <button class="filter-btn" onclick="clearAllSavedData()" style="font-size:0.72rem;color:var(--text-muted);border-color:var(--border);" title="Remove all saved data and restore defaults">Reset</button>
+    </div>
+    <div class="filter-group view-toggle" style="margin-left:0;">
+      <button id="viewTable" class="active" onclick="setView('table')">Table</button>
+      <button id="viewCards" onclick="setView('cards')">Cards</button>
+    </div>
+  </div>
+
+  <!-- Compare Panel -->
+  <div class="compare-panel" id="comparePanel">
+    <h3>⚖️ Compare <span id="compareCount"></span></h3>
+    <div class="compare-bar" id="compareBar"></div>
+    <div id="compareContent"></div>
+  </div>
+
+  <!-- Results Table -->
+  <div class="table-container" id="tableContainer">
+    <table>
+      <thead>
+        <tr>
+          <th style="cursor:default;">★</th>
+          <th onclick="sortBy('rank')">#<span class="sort-arrow" id="sort-rank"></span></th>
+          <th onclick="sortBy('name')">Car<span class="sort-arrow" id="sort-name"></span></th>
+          <th onclick="sortBy('fuel')">Fuel<span class="sort-arrow" id="sort-fuel"></span></th>
+          <th onclick="sortBy('efficiency')">Econ<span class="sort-arrow" id="sort-efficiency"></span></th>
+          <th onclick="sortBy('price')">Price<span class="sort-arrow" id="sort-price"></span></th>
+          <th onclick="sortBy('depreciation')">Deprec.<span class="sort-arrow" id="sort-depreciation"></span></th>
+          <th onclick="sortBy('ved')">Tax<span class="sort-arrow" id="sort-ved"></span></th>
+          <th onclick="sortBy('fuelCost')">Fuel<span class="sort-arrow" id="sort-fuelCost"></span></th>
+          <th onclick="sortBy('servicing')">Service<span class="sort-arrow" id="sort-servicing"></span></th>
+          <th onclick="sortBy('insurance')">Insure<span class="sort-arrow" id="sort-insurance"></span></th>
+          <th onclick="sortBy('other')">Other<span class="sort-arrow" id="sort-other"></span></th>
+          <th onclick="sortBy('total')" style="color:var(--primary)">Total 3yr<span class="sort-arrow" id="sort-total"></span></th>
+          <th onclick="sortBy('monthly')">/Month<span class="sort-arrow" id="sort-monthly"></span></th>
+          <th onclick="sortBy('costPerMile')">£/mi<span class="sort-arrow" id="sort-costPerMile"></span></th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody id="carTableBody"></tbody>
+    </table>
+  </div>
+
+  <!-- Card View -->
+  <div class="table-container" id="cardContainer" style="display:none;">
+    <div class="card-grid" id="cardGrid"></div>
+  </div>
+
+  <!-- Add Car -->
+  <div class="add-car-panel">
+    <h2 onclick="toggleSection('addcar')"><span class="arrow" id="addcar-arrow">&#x25BC;</span> Add a Car</h2>
+    <div id="addcar-content" class="collapsible-content">
+      <div class="add-form-grid">
+        <div class="form-field">
+          <label>Make &amp; Model</label>
+          <input type="text" id="newName" placeholder="e.g. Ford Focus 1.0">
+        </div>
+        <div class="form-field">
+          <label>Fuel Type</label>
+          <select id="newFuel">
+            <option value="petrol">Petrol</option>
+            <option value="phev">PHEV</option>
+            <option value="diesel">Diesel</option>
+            <option value="electric">Electric</option>
+          </select>
+        </div>
+        <div class="form-field">
+          <label>Body Type</label>
+          <select id="newBody">
+            <option value="hatchback">Hatchback</option>
+            <option value="saloon">Saloon</option>
+            <option value="suv">SUV / Crossover</option>
+            <option value="estate">Estate</option>
+          </select>
+        </div>
+        <div class="form-field">
+          <label>Price (£)</label>
+          <input type="number" id="newPrice" placeholder="30000" min="5000" max="200000">
+        </div>
+        <div class="form-field">
+          <label id="effLabel">Fuel Efficiency (MPG)</label>
+          <input type="number" id="newEfficiency" placeholder="50" min="1" max="500" step="0.1">
+        </div>
+        <div class="form-field">
+          <label>CO2 (g/km)</label>
+          <input type="number" id="newCo2" placeholder="120" min="0" max="400">
+        </div>
+        <div class="form-field">
+          <label>Annual Service Cost (£)</label>
+          <input type="number" id="newService" placeholder="300" min="0" max="3000">
+        </div>
+        <div class="form-field">
+          <label>3yr Depreciation (%)</label>
+          <input type="number" id="newDeprec" placeholder="45" min="10" max="80">
+        </div>
+        <div class="form-field">
+          <label>Annual Insurance (£)</label>
+          <input type="number" id="newInsurance" placeholder="500" min="100" max="5000">
+        </div>
+      </div>
+      <div style="margin-top:16px; padding-top:16px; border-top:1.5px solid var(--border);">
+        <h3 style="font-size:0.9rem; color:var(--primary); margin-bottom:12px;">Salary Sacrifice (Optional)</h3>
+        <p style="font-size:0.82rem; color:var(--text-muted); margin-bottom:12px;">Enter each year's net monthly rental (what comes off take-home pay). All-in except fuel. The average is used for the comparison.</p>
+        <div class="add-form-grid">
+          <div class="form-field">
+            <label>Year 1 (£/mo)</label>
+            <input type="number" id="newSS1" placeholder="e.g. 320" min="0" max="3000" oninput="updateSSAvg()">
+          </div>
+          <div class="form-field">
+            <label>Year 2 (£/mo)</label>
+            <input type="number" id="newSS2" placeholder="e.g. 350" min="0" max="3000" oninput="updateSSAvg()">
+          </div>
+          <div class="form-field">
+            <label>Year 3 (£/mo)</label>
+            <input type="number" id="newSS3" placeholder="e.g. 380" min="0" max="3000" oninput="updateSSAvg()">
+          </div>
+          <div class="form-field">
+            <label>Avg Monthly</label>
+            <input type="text" id="newSSAvg" readonly style="background:#f0f4ff;color:var(--primary);font-weight:700;" placeholder="—">
+            <div class="unit">auto-calculated</div>
+          </div>
+        </div>
+      </div>
+      <button class="btn-add" style="margin-top:16px;" onclick="addCar()">Add Car to Comparison</button>
+      <button class="btn-secondary" onclick="resetForm()">Clear Form</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ============ HELPERS ============
+function fuelLabel(f) { return f === 'phev' ? 'PHEV' : f.charAt(0).toUpperCase() + f.slice(1); }
+
+// ============ UK VED RATES (2025/26) ============
+function calcVED3yr(co2, fuelType, price) {
+  let year1 = 0;
+  if (fuelType === 'electric') {
+    year1 = 10;
+  } else {
+    if (co2 === 0) year1 = 0;
+    else if (co2 <= 50) year1 = 10;
+    else if (co2 <= 75) year1 = 30;
+    else if (co2 <= 90) year1 = 135;
+    else if (co2 <= 100) year1 = 175;
+    else if (co2 <= 110) year1 = 195;
+    else if (co2 <= 130) year1 = 220;
+    else if (co2 <= 150) year1 = 270;
+    else if (co2 <= 170) year1 = 680;
+    else if (co2 <= 190) year1 = 1095;
+    else if (co2 <= 225) year1 = 1650;
+    else if (co2 <= 255) year1 = 2340;
+    else year1 = 2745;
+  }
+  const standardRate = 190;
+  let total = year1 + (standardRate * 2);
+  // Expensive car supplement: cars over £40k pay extra £410/yr for years 2-6
+  if (price > 40000) {
+    total += 410 * 2; // years 2 and 3
+  }
+  return total;
+}
+
+// ============ FUEL COST ============
+function calcFuelCost3yr(fuelType, efficiency, annualMiles) {
+  const petrolPPL = parseFloat(document.getElementById('petrolPrice').value) || 1.42;
+  const dieselPPL = parseFloat(document.getElementById('dieselPrice').value) || 1.48;
+  const elecPPKWH = parseFloat(document.getElementById('elecPrice').value) || 0.245;
+
+  if (fuelType === 'electric') {
+    // efficiency = miles per kWh
+    const kwhNeeded = annualMiles / efficiency;
+    return kwhNeeded * elecPPKWH * 3;
+  } else {
+    // efficiency = MPG (imperial)
+    const litresPerGallon = 4.546;
+    const litresNeeded = (annualMiles / efficiency) * litresPerGallon;
+    const pricePerLitre = fuelType === 'diesel' ? dieselPPL : petrolPPL; // phev uses petrol price
+    return litresNeeded * pricePerLitre * 3;
+  }
+}
+
+// ============ PRE-LOADED CARS ============
+let cars = [
+  // ===== MAINSTREAM — ELECTRIC =====
+  { name: "Tesla Model 3 Standard", make: "Tesla", fuel: "electric", body: "saloon", price: 40990, efficiency: 4.0, co2: 0, annualService: 120, depreciationPct: 48, annualInsurance: 680 },
+  { name: "Tesla Model Y Long Range", make: "Tesla", fuel: "electric", body: "suv", price: 49990, efficiency: 3.6, co2: 0, annualService: 130, depreciationPct: 46, annualInsurance: 720 },
+  { name: "Nissan Leaf (40kWh)", make: "Nissan", fuel: "electric", body: "hatchback", price: 28995, efficiency: 3.5, co2: 0, annualService: 110, depreciationPct: 52, annualInsurance: 480 },
+  { name: "MG4 SE Long Range", make: "MG", fuel: "electric", body: "hatchback", price: 27495, efficiency: 3.8, co2: 0, annualService: 100, depreciationPct: 50, annualInsurance: 440 },
+  { name: "Volkswagen ID.3 Pro", make: "Volkswagen", fuel: "electric", body: "hatchback", price: 33295, efficiency: 3.6, co2: 0, annualService: 130, depreciationPct: 50, annualInsurance: 520 },
+  { name: "Hyundai Ioniq 5 (73kWh)", make: "Hyundai", fuel: "electric", body: "suv", price: 42495, efficiency: 3.4, co2: 0, annualService: 130, depreciationPct: 46, annualInsurance: 640 },
+  { name: "BYD Atto 3 Active", make: "BYD", fuel: "electric", body: "suv", price: 32495, efficiency: 3.3, co2: 0, annualService: 100, depreciationPct: 55, annualInsurance: 500 },
+  { name: "Kia EV6 Standard", make: "Kia", fuel: "electric", body: "suv", price: 44495, efficiency: 3.5, co2: 0, annualService: 130, depreciationPct: 44, annualInsurance: 650 },
+
+  // ===== MAINSTREAM — PETROL =====
+  { name: "Vauxhall Corsa 1.2 Design", make: "Vauxhall", fuel: "petrol", body: "hatchback", price: 20635, efficiency: 48, co2: 129, annualService: 260, depreciationPct: 48, annualInsurance: 420 },
+  { name: "Ford Puma 1.0 EcoBoost", make: "Ford", fuel: "petrol", body: "suv", price: 27350, efficiency: 49, co2: 125, annualService: 280, depreciationPct: 45, annualInsurance: 480 },
+  { name: "Volkswagen Golf 1.5 TSI", make: "Volkswagen", fuel: "petrol", body: "hatchback", price: 29500, efficiency: 47, co2: 130, annualService: 310, depreciationPct: 42, annualInsurance: 520 },
+  { name: "Toyota Yaris 1.5 Hybrid", make: "Toyota", fuel: "petrol", body: "hatchback", price: 23700, efficiency: 62, co2: 98, annualService: 200, depreciationPct: 38, annualInsurance: 390 },
+  { name: "Hyundai Tucson 1.6T HEV", make: "Hyundai", fuel: "petrol", body: "suv", price: 33835, efficiency: 49, co2: 131, annualService: 290, depreciationPct: 42, annualInsurance: 540 },
+  { name: "Kia Sportage 1.6T HEV", make: "Kia", fuel: "petrol", body: "suv", price: 34645, efficiency: 49, co2: 132, annualService: 280, depreciationPct: 40, annualInsurance: 530 },
+  { name: "MINI Cooper 1.5", make: "MINI", fuel: "petrol", body: "hatchback", price: 24200, efficiency: 48, co2: 128, annualService: 320, depreciationPct: 44, annualInsurance: 510 },
+  { name: "Toyota Corolla 1.8 Hybrid", make: "Toyota", fuel: "petrol", body: "hatchback", price: 28845, efficiency: 58, co2: 102, annualService: 220, depreciationPct: 38, annualInsurance: 460 },
+
+  // ===== MAINSTREAM — DIESEL =====
+  { name: "Skoda Octavia 2.0 TDI SE", make: "Skoda", fuel: "diesel", body: "estate", price: 29850, efficiency: 55, co2: 118, annualService: 300, depreciationPct: 44, annualInsurance: 460 },
+  { name: "BMW 320d M Sport", make: "BMW", fuel: "diesel", body: "saloon", price: 42645, efficiency: 55, co2: 122, annualService: 420, depreciationPct: 42, annualInsurance: 680 },
+  { name: "BMW 330e M Sport Saloon", make: "BMW", fuel: "phev", body: "saloon", price: 46100, efficiency: 52, co2: 38, annualService: 380, depreciationPct: 42, annualInsurance: 700 },
+  { name: "BMW 330e M Sport Touring", make: "BMW", fuel: "phev", body: "estate", price: 48100, efficiency: 50, co2: 40, annualService: 380, depreciationPct: 43, annualInsurance: 710 },
+  { name: "Peugeot 3008 1.5 BlueHDi", make: "Peugeot", fuel: "diesel", body: "suv", price: 32500, efficiency: 52, co2: 128, annualService: 310, depreciationPct: 48, annualInsurance: 500 },
+  { name: "Ford Kuga 1.5 EcoBlue", make: "Ford", fuel: "diesel", body: "suv", price: 30940, efficiency: 50, co2: 135, annualService: 290, depreciationPct: 46, annualInsurance: 490 },
+  { name: "Volkswagen Tiguan 2.0 TDI", make: "Volkswagen", fuel: "diesel", body: "suv", price: 35975, efficiency: 48, co2: 142, annualService: 340, depreciationPct: 44, annualInsurance: 540 },
+  { name: "Hyundai Tucson 1.6 CRDi", make: "Hyundai", fuel: "diesel", body: "suv", price: 31635, efficiency: 50, co2: 138, annualService: 280, depreciationPct: 44, annualInsurance: 510 },
+
+  // ===== PREMIUM SUVs — ELECTRIC =====
+  { name: "BMW iX1 eDrive20", make: "BMW", fuel: "electric", body: "suv", price: 48950, efficiency: 3.3, co2: 0, annualService: 180, depreciationPct: 46, annualInsurance: 720 },
+  { name: "BMW iX3 M Sport", make: "BMW", fuel: "electric", body: "suv", price: 58750, efficiency: 3.1, co2: 0, annualService: 200, depreciationPct: 48, annualInsurance: 780 },
+  { name: "BMW iX xDrive40", make: "BMW", fuel: "electric", body: "suv", price: 69150, efficiency: 2.9, co2: 0, annualService: 220, depreciationPct: 50, annualInsurance: 850 },
+  { name: "Volvo EX40 (XC40 Recharge)", make: "Volvo", fuel: "electric", body: "suv", price: 46495, efficiency: 3.2, co2: 0, annualService: 170, depreciationPct: 50, annualInsurance: 700 },
+  { name: "Volvo EX90 Twin Motor", make: "Volvo", fuel: "electric", body: "suv", price: 79550, efficiency: 2.8, co2: 0, annualService: 220, depreciationPct: 52, annualInsurance: 920 },
+  { name: "Porsche Macan Electric", make: "Porsche", fuel: "electric", body: "suv", price: 69800, efficiency: 2.9, co2: 0, annualService: 350, depreciationPct: 42, annualInsurance: 1100 },
+  { name: "Porsche Cayenne E-Hybrid", make: "Porsche", fuel: "electric", body: "suv", price: 78800, efficiency: 2.5, co2: 0, annualService: 380, depreciationPct: 40, annualInsurance: 1200 },
+  { name: "Mercedes EQA 250+", make: "Mercedes", fuel: "electric", body: "suv", price: 49950, efficiency: 3.4, co2: 0, annualService: 200, depreciationPct: 48, annualInsurance: 720 },
+  { name: "Mercedes EQB 250+", make: "Mercedes", fuel: "electric", body: "suv", price: 52950, efficiency: 3.1, co2: 0, annualService: 210, depreciationPct: 50, annualInsurance: 740 },
+  { name: "Mercedes EQC 400", make: "Mercedes", fuel: "electric", body: "suv", price: 65950, efficiency: 2.7, co2: 0, annualService: 240, depreciationPct: 52, annualInsurance: 820 },
+  { name: "Audi Q4 e-tron 40", make: "Audi", fuel: "electric", body: "suv", price: 48500, efficiency: 3.3, co2: 0, annualService: 190, depreciationPct: 48, annualInsurance: 700 },
+  { name: "Audi Q8 e-tron 55", make: "Audi", fuel: "electric", body: "suv", price: 74950, efficiency: 2.6, co2: 0, annualService: 260, depreciationPct: 52, annualInsurance: 900 },
+  { name: "Jaguar I-PACE EV400", make: "Jaguar", fuel: "electric", body: "suv", price: 69995, efficiency: 2.8, co2: 0, annualService: 280, depreciationPct: 54, annualInsurance: 880 },
+  { name: "Range Rover Electric", make: "Range Rover", fuel: "electric", body: "suv", price: 120000, efficiency: 2.5, co2: 0, annualService: 400, depreciationPct: 44, annualInsurance: 1400 },
+  { name: "Range Rover Sport Electric", make: "Range Rover", fuel: "electric", body: "suv", price: 95000, efficiency: 2.6, co2: 0, annualService: 380, depreciationPct: 46, annualInsurance: 1200 },
+
+  // ===== PREMIUM SUVs — HYBRID (PHEV) =====
+  { name: "BMW X1 xDrive25e PHEV", make: "BMW", fuel: "phev", body: "suv", price: 43550, efficiency: 55, co2: 38, annualService: 320, depreciationPct: 44, annualInsurance: 680 },
+  { name: "BMW X3 xDrive30e PHEV", make: "BMW", fuel: "phev", body: "suv", price: 53950, efficiency: 48, co2: 42, annualService: 360, depreciationPct: 44, annualInsurance: 740 },
+  { name: "BMW X5 xDrive50e PHEV", make: "BMW", fuel: "phev", body: "suv", price: 72550, efficiency: 42, co2: 36, annualService: 420, depreciationPct: 46, annualInsurance: 900 },
+  { name: "Volvo XC60 T6 PHEV", make: "Volvo", fuel: "phev", body: "suv", price: 56395, efficiency: 50, co2: 40, annualService: 340, depreciationPct: 46, annualInsurance: 720 },
+  { name: "Volvo XC90 T8 PHEV", make: "Volvo", fuel: "phev", body: "suv", price: 69595, efficiency: 44, co2: 48, annualService: 380, depreciationPct: 48, annualInsurance: 840 },
+  { name: "Porsche Cayenne PHEV", make: "Porsche", fuel: "phev", body: "suv", price: 78300, efficiency: 40, co2: 52, annualService: 450, depreciationPct: 38, annualInsurance: 1150 },
+  { name: "Porsche Cayenne Turbo E-Hybrid", make: "Porsche", fuel: "phev", body: "suv", price: 115400, efficiency: 35, co2: 60, annualService: 520, depreciationPct: 36, annualInsurance: 1400 },
+  { name: "Mercedes GLC 300e PHEV", make: "Mercedes", fuel: "phev", body: "suv", price: 56395, efficiency: 47, co2: 44, annualService: 360, depreciationPct: 44, annualInsurance: 740 },
+  { name: "Mercedes GLE 350de PHEV", make: "Mercedes", fuel: "phev", body: "suv", price: 72395, efficiency: 45, co2: 40, annualService: 400, depreciationPct: 46, annualInsurance: 860 },
+  { name: "Audi Q5 55 TFSI e PHEV", make: "Audi", fuel: "phev", body: "suv", price: 56850, efficiency: 46, co2: 42, annualService: 360, depreciationPct: 44, annualInsurance: 740 },
+  { name: "Audi Q7 55 TFSI e PHEV", make: "Audi", fuel: "phev", body: "suv", price: 74900, efficiency: 38, co2: 54, annualService: 420, depreciationPct: 46, annualInsurance: 880 },
+  { name: "Range Rover Sport P440e PHEV", make: "Range Rover", fuel: "phev", body: "suv", price: 82950, efficiency: 36, co2: 52, annualService: 420, depreciationPct: 42, annualInsurance: 1100 },
+  { name: "Range Rover P440e PHEV", make: "Range Rover", fuel: "phev", body: "suv", price: 113350, efficiency: 32, co2: 58, annualService: 460, depreciationPct: 40, annualInsurance: 1350 },
+
+  // ===== PREMIUM SUVs — DIESEL =====
+  { name: "BMW X3 xDrive20d", make: "BMW", fuel: "diesel", body: "suv", price: 48650, efficiency: 50, co2: 138, annualService: 360, depreciationPct: 44, annualInsurance: 680 },
+  { name: "Mercedes GLC 220d", make: "Mercedes", fuel: "diesel", body: "suv", price: 49950, efficiency: 50, co2: 140, annualService: 350, depreciationPct: 44, annualInsurance: 680 },
+  { name: "Audi Q5 40 TDI", make: "Audi", fuel: "diesel", body: "suv", price: 50300, efficiency: 48, co2: 142, annualService: 360, depreciationPct: 44, annualInsurance: 680 },
+  { name: "Volvo XC60 B4 Diesel", make: "Volvo", fuel: "diesel", body: "suv", price: 44395, efficiency: 48, co2: 145, annualService: 320, depreciationPct: 46, annualInsurance: 620 },
+  { name: "Range Rover Sport D300", make: "Range Rover", fuel: "diesel", body: "suv", price: 79950, efficiency: 38, co2: 192, annualService: 420, depreciationPct: 42, annualInsurance: 1050 },
+];
+
+// ============ PERSISTENCE ============
+const STORAGE_KEY = 'carCostCalc';
+const DEFAULT_CARS = JSON.parse(JSON.stringify(cars)); // deep clone of built-in cars
+
+function saveState() {
+  try {
+    const state = {
+      userCars: cars.slice(DEFAULT_CARS.length), // cars added after the built-in set
+      editedBuiltins: {}, // built-in cars that were modified
+      priceOverridesByName: Object.fromEntries(
+        Object.entries(priceOverrides).map(([idx, v]) => [cars[idx] ? cars[idx].name : null, v]).filter(([k]) => k)
+      ),
+      starRatings: starRatings,
+      settings: getSettingsState(),
+      sort: currentSort,
+      fuelFilter: currentFuelFilter,
+      minStarFilter: minStarFilter
+    };
+    // Detect edits to built-in cars by comparing to defaults
+    for (let i = 0; i < DEFAULT_CARS.length && i < cars.length; i++) {
+      if (JSON.stringify(cars[i]) !== JSON.stringify(DEFAULT_CARS[i])) {
+        state.editedBuiltins[i] = cars[i];
+      }
+    }
+    // Track deleted built-in cars (if cars array is shorter or has gaps)
+    state.deletedBuiltins = [];
+    DEFAULT_CARS.forEach((dc, i) => {
+      const found = cars.some(c => c.name === dc.name && c.make === dc.make && c.fuel === dc.fuel && c.price === dc.price);
+      if (!found && !state.editedBuiltins[i]) {
+        state.deletedBuiltins.push(dc.name);
+      }
+    });
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  } catch (e) { /* storage full or unavailable — fail silently */ }
+}
+
+function getSettingsState() {
+  return {
+    annualMileage: document.getElementById('annualMileage')?.value,
+    petrolPrice: document.getElementById('petrolPrice')?.value,
+    dieselPrice: document.getElementById('dieselPrice')?.value,
+    elecPrice: document.getElementById('elecPrice')?.value,
+    motCost: document.getElementById('motCost')?.value,
+    insuranceMult: document.getElementById('insuranceMult')?.value,
+    breakdownCover: document.getElementById('breakdownCover')?.value,
+    congestionZone: document.getElementById('congestionZone')?.value,
+    congestionDays: document.getElementById('congestionDays')?.value
+  };
+}
+
+function loadState() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return;
+    const state = JSON.parse(raw);
+
+    // Restore built-in car edits
+    if (state.editedBuiltins) {
+      Object.keys(state.editedBuiltins).forEach(i => {
+        const idx = parseInt(i);
+        if (idx < cars.length) {
+          cars[idx] = state.editedBuiltins[i];
+        }
+      });
+    }
+
+    // Remove deleted built-in cars
+    if (state.deletedBuiltins && state.deletedBuiltins.length > 0) {
+      for (let i = cars.length - 1; i >= 0; i--) {
+        if (state.deletedBuiltins.includes(cars[i].name)) {
+          cars.splice(i, 1);
+        }
+      }
+    }
+
+    // Restore user-added cars
+    if (state.userCars && state.userCars.length > 0) {
+      state.userCars.forEach(c => cars.push(c));
+    }
+
+    // Restore price overrides (by name → resolve to current index)
+    const overrides = state.priceOverridesByName || state.priceOverrides || {};
+    Object.entries(overrides).forEach(([nameOrIdx, v]) => {
+      let idx = parseInt(nameOrIdx);
+      if (isNaN(idx)) {
+        // Name-based lookup
+        idx = cars.findIndex(c => c.name === nameOrIdx);
+      }
+      if (idx >= 0 && cars[idx]) {
+        priceOverrides[idx] = v;
+        cars[idx].price = v.override;
+      }
+    });
+
+    // Restore star ratings
+    if (state.starRatings) {
+      Object.entries(state.starRatings).forEach(([name, stars]) => {
+        if (cars.some(c => c.name === name)) starRatings[name] = stars;
+      });
+    }
+    // Legacy: convert old favouriteNames (Set) to 1-star ratings
+    if (!state.starRatings && state.favouriteNames) {
+      state.favouriteNames.forEach(name => {
+        if (typeof name === 'string' && cars.some(c => c.name === name)) starRatings[name] = 1;
+      });
+    }
+
+    // Restore settings
+    if (state.settings) {
+      const s = state.settings;
+      if (s.annualMileage) document.getElementById('annualMileage').value = s.annualMileage;
+      if (s.petrolPrice) document.getElementById('petrolPrice').value = s.petrolPrice;
+      if (s.dieselPrice) document.getElementById('dieselPrice').value = s.dieselPrice;
+      if (s.elecPrice) document.getElementById('elecPrice').value = s.elecPrice;
+      if (s.motCost) document.getElementById('motCost').value = s.motCost;
+      if (s.insuranceMult) document.getElementById('insuranceMult').value = s.insuranceMult;
+      if (s.breakdownCover) document.getElementById('breakdownCover').value = s.breakdownCover;
+      if (s.congestionZone) document.getElementById('congestionZone').value = s.congestionZone;
+      if (s.congestionDays) document.getElementById('congestionDays').value = s.congestionDays;
+    }
+
+    // Restore sort & filter state
+    if (state.sort) currentSort = state.sort;
+    if (state.fuelFilter) {
+      currentFuelFilter = state.fuelFilter;
+      document.querySelectorAll('.filter-btn[data-filter]').forEach(b => {
+        b.classList.toggle('active', b.getAttribute('data-filter') === currentFuelFilter);
+      });
+    }
+    if (state.minStarFilter) {
+      minStarFilter = state.minStarFilter;
+      const btn = document.getElementById('favFilter' + minStarFilter);
+      if (btn) btn.classList.add('active');
+    }
+  } catch (e) { /* corrupt data — ignore, use defaults */ }
+}
+
+// ============ STATE ============
+let currentSort = { key: 'total', dir: 'asc' };
+let currentFuelFilter = 'all';
+let minStarFilter = 0; // 0 = show all, 1/2/3 = show cars with >= N stars
+// Price overrides: key = original car index, value = { original: number, override: number }
+const priceOverrides = {};
+// Star ratings: map of car name → star count (1, 2, or 3). 0 = no stars.
+const starRatings = {};
+
+function getStars(car) { return starRatings[car.name] || 0; }
+
+function setStars(idx, stars) {
+  const name = cars[idx]?.name;
+  if (!name) return;
+  const current = starRatings[name] || 0;
+  // Clicking the same star level toggles it off
+  if (current === stars) {
+    delete starRatings[name];
+  } else {
+    starRatings[name] = stars;
+  }
+  recalcAll();
+}
+
+// Legacy compat
+function isFav(car) { return getStars(car) > 0; }
+
+// Edit car in-place via modal
+function editCar(idx) {
+  const c = cars[idx];
+  if (!c) return;
+  const body = document.getElementById('modalBody');
+  body.innerHTML = `
+    <h2 style="font-size:1.1rem; margin-bottom:16px;">Edit: ${c.name}</h2>
+    <div class="edit-form-grid">
+      <div class="edit-field"><label>Name</label><input id="ed_name" value="${c.name}"></div>
+      <div class="edit-field"><label>Fuel Type</label>
+        <select id="ed_fuel">
+          <option value="petrol"${c.fuel==='petrol'?' selected':''}>Petrol</option>
+          <option value="phev"${c.fuel==='phev'?' selected':''}>PHEV</option>
+          <option value="diesel"${c.fuel==='diesel'?' selected':''}>Diesel</option>
+          <option value="electric"${c.fuel==='electric'?' selected':''}>Electric</option>
+        </select>
+      </div>
+      <div class="edit-field"><label>Body</label>
+        <select id="ed_body">
+          <option value="hatchback"${c.body==='hatchback'?' selected':''}>Hatchback</option>
+          <option value="saloon"${c.body==='saloon'?' selected':''}>Saloon</option>
+          <option value="suv"${c.body==='suv'?' selected':''}>SUV</option>
+          <option value="estate"${c.body==='estate'?' selected':''}>Estate</option>
+        </select>
+      </div>
+      <div class="edit-field"><label>Price (£)</label><input id="ed_price" type="number" value="${c.price}"></div>
+      <div class="edit-field"><label>${c.fuel==='electric'?'Efficiency (mi/kWh)':'Fuel Efficiency (MPG)'}</label><input id="ed_eff" type="number" value="${c.efficiency}" step="0.1"></div>
+      <div class="edit-field"><label>CO2 (g/km)</label><input id="ed_co2" type="number" value="${c.co2}"></div>
+      <div class="edit-field"><label>Annual Service (£)</label><input id="ed_service" type="number" value="${c.annualService}"></div>
+      <div class="edit-field"><label>Depreciation (%)</label><input id="ed_dep" type="number" value="${c.depreciationPct}"></div>
+      <div class="edit-field"><label>Annual Insurance (£)</label><input id="ed_ins" type="number" value="${c.annualInsurance}"></div>
+    </div>
+    <div style="margin-top:16px; padding-top:16px; border-top:1.5px solid var(--border);">
+      <h3 style="font-size:0.9rem; color:var(--primary); margin-bottom:8px;">Salary Sacrifice</h3>
+      <p style="font-size:0.78rem; color:var(--text-muted); margin-bottom:8px;">Enter each year's rental. Leave all blank or 0 to remove. Average is used for comparison.</p>
+      <div class="edit-form-grid">
+        <div class="edit-field"><label>Year 1 (£/mo)</label><input id="ed_ss1" type="number" value="${c.salSac ? c.salSac.yr1 || c.salSac.netMonthly : ''}" placeholder="0" oninput="updateEditSSAvg()"></div>
+        <div class="edit-field"><label>Year 2 (£/mo)</label><input id="ed_ss2" type="number" value="${c.salSac ? c.salSac.yr2 || c.salSac.netMonthly : ''}" placeholder="0" oninput="updateEditSSAvg()"></div>
+        <div class="edit-field"><label>Year 3 (£/mo)</label><input id="ed_ss3" type="number" value="${c.salSac ? c.salSac.yr3 || c.salSac.netMonthly : ''}" placeholder="0" oninput="updateEditSSAvg()"></div>
+        <div class="edit-field"><label>Avg Monthly</label><input id="ed_ssAvg" type="text" readonly style="background:#f0f4ff;color:#1d4ed8;font-weight:700;" value="${c.salSac ? '£' + c.salSac.netMonthly.toFixed(2) : '—'}"></div>
+      </div>
+    </div>
+    <div class="edit-actions">
+      <button class="edit-save" onclick="saveEdit(${idx})">Save Changes</button>
+      <button class="edit-cancel" onclick="openModal(${idx})">Cancel</button>
+    </div>
+  `;
+}
+
+function saveEdit(idx) {
+  const c = cars[idx];
+  c.name = document.getElementById('ed_name').value.trim() || c.name;
+  c.make = c.name.split(' ')[0];
+  c.fuel = document.getElementById('ed_fuel').value;
+  c.body = document.getElementById('ed_body').value;
+  c.price = parseFloat(document.getElementById('ed_price').value) || c.price;
+  c.efficiency = parseFloat(document.getElementById('ed_eff').value) || c.efficiency;
+  c.co2 = parseFloat(document.getElementById('ed_co2').value) || 0;
+  c.annualService = parseFloat(document.getElementById('ed_service').value) || c.annualService;
+  c.depreciationPct = parseFloat(document.getElementById('ed_dep').value) || c.depreciationPct;
+  c.annualInsurance = parseFloat(document.getElementById('ed_ins').value) || c.annualInsurance;
+
+  const ss1 = parseFloat(document.getElementById('ed_ss1').value) || 0;
+  const ss2 = parseFloat(document.getElementById('ed_ss2').value) || 0;
+  const ss3 = parseFloat(document.getElementById('ed_ss3').value) || 0;
+  const ssAvg = (ss1 + ss2 + ss3) / 3;
+  if (ssAvg > 0) {
+    c.salSac = { yr1: ss1, yr2: ss2, yr3: ss3, netMonthly: Math.round(ssAvg * 100) / 100 };
+  } else {
+    delete c.salSac;
+  }
+
+  // Clean up price override if price was manually changed
+  if (priceOverrides[idx]) {
+    delete priceOverrides[idx];
+  }
+
+  populateMakeFilter();
+  recalcAll();
+  openModal(idx);
+}
+
+function overridePrice(origIdx, event) {
+  event.stopPropagation();
+  const car = cars[origIdx];
+  if (!car) return;
+  const currentPrice = car.price;
+  const td = event.currentTarget;
+  td.innerHTML = `<input class="price-input" type="number" value="${currentPrice}" onblur="applyPriceOverride(${origIdx}, this)" onkeydown="if(event.key==='Enter')this.blur();if(event.key==='Escape'){event.preventDefault();recalcAll();}" autofocus>`;
+  td.querySelector('input').focus();
+  td.querySelector('input').select();
+}
+
+function applyPriceOverride(origIdx, input) {
+  const newPrice = parseFloat(input.value);
+  const car = cars[origIdx];
+  if (!newPrice || newPrice === car.price) {
+    recalcAll();
+    return;
+  }
+  if (!priceOverrides[origIdx]) {
+    priceOverrides[origIdx] = { original: car.price };
+  }
+  priceOverrides[origIdx].override = newPrice;
+  car.price = newPrice;
+  recalcAll();
+}
+
+function resetPrice(origIdx, event) {
+  event.stopPropagation();
+  const ov = priceOverrides[origIdx];
+  if (ov) {
+    cars[origIdx].price = ov.original;
+    delete priceOverrides[origIdx];
+    recalcAll();
+  }
+}
+
+function resetAllPrices() {
+  Object.keys(priceOverrides).forEach(idx => {
+    cars[idx].price = priceOverrides[idx].original;
+    delete priceOverrides[idx];
+  });
+  recalcAll();
+}
+function clearAllSavedData() {
+  if (!confirm('This will remove all your added cars, edits, favourites, and settings. Restore to factory defaults?')) return;
+  localStorage.removeItem(STORAGE_KEY);
+  location.reload();
+}
+
+function exportData() {
+  const data = localStorage.getItem(STORAGE_KEY);
+  if (!data) { alert('Nothing saved yet — add or edit a car first.'); return; }
+  const blob = new Blob([data], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'runrate-backup.json';
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function importData(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const parsed = JSON.parse(e.target.result);
+      // Basic validation — check it has expected keys
+      if (!parsed.starRatings && !parsed.favouriteNames && !parsed.favourites && !parsed.userCars && !parsed.settings) {
+        alert('This doesn\'t look like a RunRate backup file.');
+        return;
+      }
+      if (!confirm('This will replace all your current cars, favourites, and settings. Continue?')) return;
+      localStorage.setItem(STORAGE_KEY, e.target.result);
+      location.reload();
+    } catch (err) {
+      alert('Could not read file — make sure it\'s a valid RunRate backup (.json).');
+    }
+  };
+  reader.readAsText(file);
+  event.target.value = ''; // allow re-importing same file
+}
+
+// Modal state managed via DOM
+
+// ============ TYRE COST ESTIMATE ============
+function calcTyres3yr(car) {
+  const annualMiles = parseFloat(document.getElementById('annualMileage').value) || 10000;
+  // Assume tyre replacement every ~20,000 miles, set of 4 tyres
+  // Price per tyre varies by car segment
+  let pricePerTyre = 80; // economy default
+  if (car.price > 70000) pricePerTyre = 200;
+  else if (car.price > 50000) pricePerTyre = 160;
+  else if (car.price > 35000) pricePerTyre = 120;
+  else if (car.price > 25000) pricePerTyre = 100;
+  // Electric cars wear tyres ~20% faster due to weight/torque
+  const tyreLife = car.fuel === 'electric' ? 16000 : 20000;
+  const totalMiles = annualMiles * 3;
+  const setsNeeded = totalMiles / tyreLife;
+  return Math.round(setsNeeded * 4 * pricePerTyre);
+}
+
+// ============ CONGESTION / ULEZ ============
+function calcCongestion3yr(car) {
+  const zone = document.getElementById('congestionZone').value;
+  if (zone === 'none') return 0;
+  const days = parseFloat(document.getElementById('congestionDays').value) || 0;
+  if (zone === 'london') {
+    // Electric cars exempt from congestion charge; all others £15/day
+    if (car.fuel === 'electric') return 0;
+    return 15 * days * 3;
+  }
+  if (zone === 'ulez') {
+    // ULEZ: petrol must meet Euro 4 (post-2006), diesel Euro 6 (post-2015). New cars all compliant, so £0
+    return 0;
+  }
+  return 0;
+}
+
+// ============ CALCULATIONS ============
+function calcCarCosts(car) {
+  const annualMiles = parseFloat(document.getElementById('annualMileage').value) || 10000;
+  const motCostVal = parseFloat(document.getElementById('motCost').value) || 55;
+  const insuranceMult = parseFloat(document.getElementById('insuranceMult').value) || 1.0;
+  const breakdownAnnual = parseFloat(document.getElementById('breakdownCover').value) || 80;
+
+  const depreciation = Math.round(car.price * (car.depreciationPct / 100));
+  const ved = calcVED3yr(car.co2, car.fuel, car.price);
+  const fuelCost = Math.round(calcFuelCost3yr(car.fuel, car.efficiency, annualMiles));
+  const servicing = car.annualService * 3;
+  const mot = motCostVal; // 1 MOT in 3 years (at year 3)
+  const insurance = Math.round(car.annualInsurance * insuranceMult * 3);
+  const tyres = calcTyres3yr(car);
+  const breakdown = Math.round(breakdownAnnual * 3);
+  const congestion = calcCongestion3yr(car);
+
+  // Salary sacrifice calculation
+  // Uses per-year rates if available, otherwise netMonthly × 36
+  let salSacData = null;
+  if (car.salSac) {
+    const ss = car.salSac;
+    const yr1 = (ss.yr1 || ss.netMonthly) * 12;
+    const yr2 = (ss.yr2 || ss.netMonthly) * 12;
+    const yr3 = (ss.yr3 || ss.netMonthly) * 12;
+    const netCost3yr = Math.round(yr1 + yr2 + yr3);
+    const ssTotalCost = netCost3yr + fuelCost;
+    salSacData = {
+      netMonthly: ss.netMonthly,
+      yr1: ss.yr1, yr2: ss.yr2, yr3: ss.yr3,
+      netCost3yr,
+      fuelCost, totalCost: ssTotalCost,
+      monthlyCost: Math.round(ssTotalCost / 36)
+    };
+  }
+
+  const total = depreciation + ved + fuelCost + servicing + mot + insurance + tyres + breakdown + congestion;
+  const monthly = Math.round(total / 36);
+  const runningCost = ved + fuelCost + servicing + mot + insurance + tyres + breakdown + congestion;
+  const runMonthly = Math.round(runningCost / 36);
+  const costPerMile = ((runningCost) / (annualMiles * 3)).toFixed(2);
+
+  return { depreciation, ved, fuelCost, servicing, mot, insurance, tyres, breakdown, congestion, total, monthly, runningCost, runMonthly, costPerMile, salSac: salSacData };
+}
+
+// ============ RENDER ============
+function recalcAll() {
+  renderTable();
+  renderSummary();
+  renderChart();
+  // Show/hide reset prices button
+  const btn = document.getElementById('resetPricesBtn');
+  if (btn) btn.style.display = Object.keys(priceOverrides).length > 0 ? '' : 'none';
+  // Persist state after every recalc
+  saveState();
+}
+
+function renderSummary() {
+  const filtered = getFilteredCars();
+  if (filtered.length === 0) {
+    document.getElementById('summaryCards').innerHTML = '';
+    return;
+  }
+  const costs = filtered.map(c => ({ ...c, costs: calcCarCosts(c) }));
+  costs.sort((a, b) => effectiveCost(a.costs) - effectiveCost(b.costs));
+
+  const cheapest = costs[0];
+  const priciest = costs[costs.length - 1];
+  const avg = Math.round(costs.reduce((s, c) => s + effectiveCost(c.costs), 0) / costs.length);
+  const saving = effectiveCost(priciest.costs) - effectiveCost(cheapest.costs);
+
+  document.getElementById('summaryCards').innerHTML = `
+    <div class="summary-card cheapest">
+      <div class="label">Cheapest to Run</div>
+      <div class="value" style="color:var(--green)">£${effectiveCost(cheapest.costs).toLocaleString()}</div>
+      <div class="detail">${cheapest.name} (£${effectiveMonthly(cheapest.costs)}/mo)</div>
+    </div>
+    <div class="summary-card priciest">
+      <div class="label">Most Expensive</div>
+      <div class="value" style="color:var(--red)">£${effectiveCost(priciest.costs).toLocaleString()}</div>
+      <div class="detail">${priciest.name} (£${effectiveMonthly(priciest.costs)}/mo)</div>
+    </div>
+    <div class="summary-card avg-card">
+      <div class="label">Average 3yr Cost</div>
+      <div class="value" style="color:var(--primary)">£${avg.toLocaleString()}</div>
+      <div class="detail">Across ${costs.length} cars shown</div>
+    </div>
+    <div class="summary-card saving-card">
+      <div class="label">Potential Saving</div>
+      <div class="value" style="color:var(--amber)">£${saving.toLocaleString()}</div>
+      <div class="detail">Cheapest vs most expensive</div>
+    </div>
+  `;
+}
+
+// Get effective total cost — sal sac net cost if available, otherwise standard total
+function effectiveCost(co) {
+  return (co.salSac && co.salSac.totalCost != null) ? co.salSac.totalCost : co.total;
+}
+function effectiveMonthly(co) {
+  return (co.salSac && co.salSac.monthlyCost != null) ? co.salSac.monthlyCost : co.monthly;
+}
+
+function getFilteredCars() {
+  const maxPrice = parseInt(document.getElementById('priceFilter').value) || 999999;
+  const bodyFilter = document.getElementById('bodyFilter').value;
+  const makeFilter = document.getElementById('makeFilter').value;
+  const schemeFilter = document.getElementById('schemeFilter').value;
+  const search = (document.getElementById('searchInput').value || '').toLowerCase();
+
+  return cars.filter(c => {
+    if (minStarFilter > 0 && getStars(c) < minStarFilter) return false;
+    if (currentFuelFilter !== 'all' && c.fuel !== currentFuelFilter) return false;
+    if (c.price > maxPrice) return false;
+    if (bodyFilter !== 'all' && c.body !== bodyFilter) return false;
+    if (makeFilter !== 'all' && c.make !== makeFilter) return false;
+    if (schemeFilter === 'salsac' && !c.salSac) return false;
+    if (schemeFilter === 'standard' && c.salSac) return false;
+    if (search && !c.name.toLowerCase().includes(search)) return false;
+    return true;
+  });
+}
+
+function populateMakeFilter() {
+  const makes = [...new Set(cars.map(c => c.make))].sort();
+  const sel = document.getElementById('makeFilter');
+  sel.innerHTML = '<option value="all">All</option>' + makes.map(m => `<option value="${m}">${m}</option>`).join('');
+}
+
+function renderTable() {
+  const filtered = getFilteredCars();
+  const withCosts = filtered.map(c => ({ ...c, _origIdx: cars.indexOf(c), costs: calcCarCosts(c) }));
+
+  // Sort
+  const key = currentSort.key;
+  withCosts.sort((a, b) => {
+    let va, vb;
+    if (key === 'name') { va = a.name; vb = b.name; }
+    else if (key === 'fuel') { va = a.fuel; vb = b.fuel; }
+    else if (key === 'efficiency') { va = a.efficiency; vb = b.efficiency; }
+    else if (key === 'price') { va = a.price; vb = b.price; }
+    else if (key === 'rank' || key === 'total') { va = effectiveCost(a.costs); vb = effectiveCost(b.costs); }
+    else if (key === 'depreciation') { va = a.costs.depreciation; vb = b.costs.depreciation; }
+    else if (key === 'ved') { va = a.costs.ved; vb = b.costs.ved; }
+    else if (key === 'fuelCost') { va = a.costs.fuelCost; vb = b.costs.fuelCost; }
+    else if (key === 'servicing') { va = a.costs.servicing; vb = b.costs.servicing; }
+    else if (key === 'insurance') { va = a.costs.insurance; vb = b.costs.insurance; }
+    else if (key === 'other') { va = a.costs.mot + a.costs.tyres + a.costs.breakdown + a.costs.congestion; vb = b.costs.mot + b.costs.tyres + b.costs.breakdown + b.costs.congestion; }
+    else if (key === 'monthly') { va = effectiveMonthly(a.costs); vb = effectiveMonthly(b.costs); }
+    else if (key === 'costPerMile') { va = parseFloat(a.costs.costPerMile); vb = parseFloat(b.costs.costPerMile); }
+    else { va = effectiveCost(a.costs); vb = effectiveCost(b.costs); }
+
+    if (typeof va === 'string') return currentSort.dir === 'asc' ? va.localeCompare(vb) : vb.localeCompare(va);
+    return currentSort.dir === 'asc' ? va - vb : vb - va;
+  });
+
+  // Update sort arrows
+  document.querySelectorAll('.sort-arrow').forEach(el => el.textContent = '');
+  const arrowEl = document.getElementById('sort-' + key);
+  if (arrowEl) arrowEl.textContent = currentSort.dir === 'asc' ? ' ▲' : ' ▼';
+
+  const tbody = document.getElementById('carTableBody');
+  // Compute min/max for colour coding
+  const ranges = {};
+  ['depreciation','ved','fuelCost','servicing','insurance','total'].forEach(k => {
+    const vals = withCosts.map(c => k === 'total' ? effectiveCost(c.costs) : c.costs[k]);
+    ranges[k] = { min: Math.min(...vals), max: Math.max(...vals) };
+  });
+  const otherVals = withCosts.map(c => c.costs.mot + c.costs.tyres + c.costs.breakdown + c.costs.congestion);
+  ranges.other = { min: Math.min(...otherVals), max: Math.max(...otherVals) };
+
+  let html = '';
+  withCosts.forEach((c, i) => {
+    const rank = i + 1;
+    const rankClass = rank === 1 ? 'rank-1' : rank === 2 ? 'rank-2' : rank === 3 ? 'rank-3' : 'rank-other';
+    const co = c.costs;
+    const carIdx = c._origIdx;
+    const stars = getStars(c);
+    const otherTotal = co.mot + co.tyres + co.breakdown + co.congestion;
+    html += `<tr class="car-row" onclick="openModal(${carIdx})">
+      <td><span class="star-rate" onclick="event.stopPropagation()"><span class="${stars >= 1 ? 'lit' : ''}" onclick="setStars(${carIdx},1)">★</span><span class="${stars >= 2 ? 'lit' : ''}" onclick="setStars(${carIdx},2)">★</span><span class="${stars >= 3 ? 'lit' : ''}" onclick="setStars(${carIdx},3)">★</span></span></td>
+      <td><span class="rank-badge ${rankClass}">${rank}</span></td>
+      <td class="car-name">${c.name}${c.salSac ? ' <span style="background:#dbeafe;color:#1d4ed8;font-size:0.65rem;padding:1px 4px;border-radius:3px;font-weight:700;">SAL SAC</span>' : ''}</td>
+      <td><span class="fuel-badge ${c.fuel}">${fuelLabel(c.fuel)}</span></td>
+      <td style="font-size:0.78rem;" title="${c.fuel === 'electric' ? 'mi/kWh' : 'MPG (imperial)'}">${c.efficiency}${c.fuel === 'electric' ? '<span style="font-size:0.6rem;color:var(--text-muted);"> m/k</span>' : '<span style="font-size:0.6rem;color:var(--text-muted);"> mpg</span>'}</td>
+      ${co.salSac ? `
+      <td style="color:var(--text-muted);font-size:0.72rem;" title="List price">£${c.price.toLocaleString()}</td>
+      <td colspan="2" style="text-align:center;color:#1d4ed8;font-size:0.78rem;" title="Net monthly × 36 = £${co.salSac.netCost3yr.toLocaleString()}"><span style="font-weight:700;">£${co.salSac.netMonthly}/mo</span><br><span style="font-size:0.66rem;color:var(--text-muted);">scheme cost</span></td>
+      <td class="${costColor(co.fuelCost, ranges.fuelCost.min, ranges.fuelCost.max)}">£${co.fuelCost.toLocaleString()}</td>
+      <td colspan="3" style="text-align:center;font-size:0.68rem;color:var(--text-muted);" title="Service, insurance, tyres, breakdown, MOT all included in salary sacrifice">inc. in scheme</td>
+      <td class="total-cost" style="${totalColorStyle(effectiveCost(co), ranges.total.min, ranges.total.max)}" title="Net salary sacrifice cost (standard: £${co.total.toLocaleString()})">£${effectiveCost(co).toLocaleString()}<span style="display:block;font-size:0.65rem;color:var(--text-muted);">net sal sac</span></td>
+      <td style="${totalColorStyle(effectiveCost(co), ranges.total.min, ranges.total.max)}">£${effectiveMonthly(co)}/mo</td>
+      <td>£${co.costPerMile}</td>
+      ` : `
+      <td class="price-cell${priceOverrides[carIdx] ? ' overridden' : ''}" onclick="overridePrice(${carIdx}, event)" title="Click to override price">${priceOverrides[carIdx] ? `<span class="original-price">£${priceOverrides[carIdx].original.toLocaleString()}</span>£${c.price.toLocaleString()}<button class="reset-price" onclick="resetPrice(${carIdx}, event)" title="Reset to original">↺</button>` : `£${c.price.toLocaleString()}`}</td>
+      <td class="${costColor(co.depreciation, ranges.depreciation.min, ranges.depreciation.max)}">£${co.depreciation.toLocaleString()}</td>
+      <td class="${costColor(co.ved, ranges.ved.min, ranges.ved.max)}">£${co.ved.toLocaleString()}</td>
+      <td class="${costColor(co.fuelCost, ranges.fuelCost.min, ranges.fuelCost.max)}">£${co.fuelCost.toLocaleString()}</td>
+      <td class="${costColor(co.servicing, ranges.servicing.min, ranges.servicing.max)}">£${co.servicing.toLocaleString()}</td>
+      <td class="${costColor(co.insurance, ranges.insurance.min, ranges.insurance.max)}">£${co.insurance.toLocaleString()}</td>
+      <td class="${costColor(otherTotal, ranges.other.min, ranges.other.max)}" title="MOT £${co.mot} + Tyres £${co.tyres.toLocaleString()} + Breakdown £${co.breakdown} + Congestion £${co.congestion.toLocaleString()}">£${otherTotal.toLocaleString()}</td>
+      <td class="total-cost" style="${totalColorStyle(co.total, ranges.total.min, ranges.total.max)}" title="Total 3-year cost">£${co.total.toLocaleString()}</td>
+      <td style="${totalColorStyle(co.total, ranges.total.min, ranges.total.max)}">£${co.monthly}/mo</td>
+      <td>£${co.costPerMile}</td>
+      `}
+      <td><button class="delete-btn" onclick="event.stopPropagation(); deleteCar(${carIdx})" title="Remove">✕</button></td>
+    </tr>`;
+  });
+
+  if (withCosts.length === 0) {
+    html = '<tr><td colspan="16" style="text-align:center;padding:40px;color:var(--text-muted);">No cars match your filters. Try adjusting or add a new car.</td></tr>';
+  }
+
+  tbody.innerHTML = html;
+  // Also render card view if active
+  if (currentView === 'cards') renderCards(withCosts);
+  renderSummary();
+  renderCompare();
+}
+
+function buildDetailPanel(c, co, carIdx) {
+  const annualMiles = parseFloat(document.getElementById('annualMileage').value) || 10000;
+  const totalMiles = annualMiles * 3;
+  const petrolPPL = parseFloat(document.getElementById('petrolPrice').value) || 1.42;
+  const dieselPPL = parseFloat(document.getElementById('dieselPrice').value) || 1.48;
+  const elecPPKWH = parseFloat(document.getElementById('elecPrice').value) || 0.245;
+  const motCostVal = parseFloat(document.getElementById('motCost').value) || 55;
+  const insuranceMult = parseFloat(document.getElementById('insuranceMult').value) || 1.0;
+  const breakdownAnnual = parseFloat(document.getElementById('breakdownCover').value) || 80;
+  const congestionDays = parseFloat(document.getElementById('congestionDays').value) || 0;
+
+  const costPerMile = (co.total / totalMiles).toFixed(2);
+  const vedYr1 = c.fuel === 'electric' ? 10 : calcVEDyr1(c.co2);
+  const vedStandard = 190;
+  const expCarSupp = c.price > 40000 ? 410 : 0;
+  const residualValue = c.price - co.depreciation;
+
+  // Fuel calc details
+  let fuelCalcHtml = '';
+  if (c.fuel === 'electric') {
+    const kwhPerYear = Math.round(annualMiles / c.efficiency);
+    const annualCost = Math.round(kwhPerYear * elecPPKWH);
+    fuelCalcHtml = `
+      <div class="calc-row"><div class="calc-label">Efficiency</div><div class="calc-value">${c.efficiency} mi/kWh</div></div>
+      <div class="calc-row"><div class="calc-label">Annual kWh needed<br><span class="calc-formula">${annualMiles.toLocaleString()} mi ÷ ${c.efficiency} mi/kWh</span></div><div class="calc-value">${kwhPerYear.toLocaleString()} kWh</div></div>
+      <div class="calc-row"><div class="calc-label">Electricity price</div><div class="calc-value">£${elecPPKWH}/kWh</div></div>
+      <div class="calc-row"><div class="calc-label">Annual electricity cost<br><span class="calc-formula">${kwhPerYear.toLocaleString()} kWh × £${elecPPKWH}</span></div><div class="calc-value">£${annualCost.toLocaleString()}/yr</div></div>
+      <div class="calc-row calc-row-total"><div class="calc-label">3-Year Fuel/Energy Cost<br><span class="calc-formula">£${annualCost.toLocaleString()} × 3 years</span></div><div class="calc-value">£${co.fuelCost.toLocaleString()}</div></div>
+    `;
+  } else {
+    const litresPerGallon = 4.546;
+    const gallonsPerYear = (annualMiles / c.efficiency);
+    const litresPerYear = Math.round(gallonsPerYear * litresPerGallon);
+    const ppl = c.fuel === 'diesel' ? dieselPPL : petrolPPL;
+    const annualCost = Math.round(litresPerYear * ppl);
+    fuelCalcHtml = `
+      <div class="calc-row"><div class="calc-label">Fuel efficiency</div><div class="calc-value">${c.efficiency} MPG (imperial)</div></div>
+      <div class="calc-row"><div class="calc-label">Annual litres needed<br><span class="calc-formula">(${annualMiles.toLocaleString()} mi ÷ ${c.efficiency} MPG) × 4.546</span></div><div class="calc-value">${litresPerYear.toLocaleString()} litres</div></div>
+      <div class="calc-row"><div class="calc-label">${fuelLabel(c.fuel)} price</div><div class="calc-value">£${ppl}/litre</div></div>
+      <div class="calc-row"><div class="calc-label">Annual fuel cost<br><span class="calc-formula">${litresPerYear.toLocaleString()} L × £${ppl}</span></div><div class="calc-value">£${annualCost.toLocaleString()}/yr</div></div>
+      <div class="calc-row calc-row-total"><div class="calc-label">3-Year Fuel Cost<br><span class="calc-formula">£${annualCost.toLocaleString()} × 3 years</span></div><div class="calc-value">£${co.fuelCost.toLocaleString()}</div></div>
+    `;
+  }
+
+  // VED calc details
+  const vedCo2Band = c.fuel === 'electric' ? 'Electric (0 g/km)' : `${c.co2} g/km`;
+  let vedCalcHtml = `
+    <div class="calc-row"><div class="calc-label">CO2 emissions band</div><div class="calc-value">${vedCo2Band}</div></div>
+    <div class="calc-row"><div class="calc-label">Year 1 (first registration rate)</div><div class="calc-value">£${vedYr1}</div></div>
+    <div class="calc-row"><div class="calc-label">Years 2–3 (standard rate)<br><span class="calc-formula">£${vedStandard} × 2 years</span></div><div class="calc-value">£${vedStandard * 2}</div></div>
+  `;
+  if (expCarSupp > 0) {
+    vedCalcHtml += `<div class="calc-row"><div class="calc-label">Expensive car supplement<br><span class="calc-formula">Price &gt; £40,000 → £410/yr × 2 yrs</span></div><div class="calc-value">£${expCarSupp * 2}</div></div>`;
+  } else {
+    vedCalcHtml += `<div class="calc-row"><div class="calc-label">Expensive car supplement<br><span class="calc-formula">Price ≤ £40,000 → not applicable</span></div><div class="calc-value">£0</div></div>`;
+  }
+  vedCalcHtml += `<div class="calc-row calc-row-total"><div class="calc-label">3-Year Road Tax<br><span class="calc-formula">£${vedYr1} + £${vedStandard * 2}${expCarSupp > 0 ? ' + £' + (expCarSupp * 2) : ''}</span></div><div class="calc-value">£${co.ved.toLocaleString()}</div></div>`;
+
+  // Cost breakdown bar chart
+  const costItems = [
+    { label: 'Depreciation', value: co.depreciation, color: '#6366f1' },
+    { label: 'Fuel', value: co.fuelCost, color: '#f59e0b' },
+    { label: 'Insurance', value: co.insurance, color: '#ef4444' },
+    { label: 'Road Tax', value: co.ved, color: '#3b82f6' },
+    { label: 'Servicing', value: co.servicing, color: '#10b981' },
+    { label: 'Tyres', value: co.tyres, color: '#ec4899' },
+    { label: 'Breakdown', value: co.breakdown, color: '#14b8a6' },
+    { label: 'MOT', value: co.mot, color: '#8b5cf6' },
+  ];
+  if (co.congestion > 0) costItems.push({ label: 'Congestion', value: co.congestion, color: '#f97316' });
+  const maxCost = Math.max(...costItems.map(x => x.value));
+  let barHtml = '';
+  costItems.forEach(item => {
+    const pct = co.total > 0 ? ((item.value / co.total) * 100).toFixed(1) : 0;
+    const barW = maxCost > 0 ? ((item.value / maxCost) * 100).toFixed(1) : 0;
+    // If bar is wide enough, white text inside; otherwise dark text positioned after bar
+    const textColor = parseFloat(barW) > 15 ? 'white' : 'var(--text)';
+    barHtml += `
+      <div class="cost-bar-row">
+        <div class="cost-bar-label">${item.label}</div>
+        <div class="cost-bar-track">
+          <div class="cost-bar-fill" style="width:${barW}%;background:${item.color}"></div>
+          <span class="cost-bar-amount" style="color:${textColor}">£${item.value.toLocaleString()}</span>
+        </div>
+        <div class="cost-bar-pct">${pct}%</div>
+      </div>
+    `;
+  });
+
+  return `
+      <div class="detail-header">
+        <div>
+          <div class="detail-title">${c.name}</div>
+          <div class="detail-subtitle">${fuelLabel(c.fuel)} · ${c.body.charAt(0).toUpperCase() + c.body.slice(1)} · ${c.co2} g/km CO2 · ${c.fuel === 'electric' ? c.efficiency + ' mi/kWh' : c.efficiency + ' MPG'}</div>
+          <div style="margin-top:8px;">
+            <span class="assumption-tag"><strong>Mileage:</strong> ${annualMiles.toLocaleString()} mi/yr</span>
+            <span class="assumption-tag"><strong>Period:</strong> 3 years</span>
+            <span class="assumption-tag"><strong>Ins. mult:</strong> ×${insuranceMult}</span>
+            ${c.fuel === 'electric' ? `<span class="assumption-tag"><strong>Elec:</strong> £${elecPPKWH}/kWh</span>` : `<span class="assumption-tag"><strong>${fuelLabel(c.fuel)}:</strong> £${c.fuel === 'diesel' ? dieselPPL : petrolPPL}/L</span>`}
+          </div>
+        </div>
+        <div class="detail-total-box">
+          <div class="dtl">Total 3-Year Cost</div>
+          <div class="dtv">£${co.total.toLocaleString()}</div>
+          <div class="dtm">£${co.monthly}/mo · £${costPerMile}/mi</div>
+        </div>
+      </div>
+
+      <div style="margin-bottom:20px;">
+        <div class="detail-section" style="background:transparent;padding:0;box-shadow:none;">
+          <h3>Cost Breakdown</h3>
+          <div class="cost-bar-chart">${barHtml}</div>
+        </div>
+      </div>
+
+      <div class="detail-sections">
+        <div class="detail-section">
+          <h3>Depreciation Calculation</h3>
+          <div class="calc-row"><div class="calc-label">Purchase price</div><div class="calc-value">£${c.price.toLocaleString()}</div></div>
+          <div class="calc-row"><div class="calc-label">3-year depreciation rate</div><div class="calc-value">${c.depreciationPct}%</div></div>
+          <div class="calc-row"><div class="calc-label">Estimated value after 3 years<br><span class="calc-formula">£${c.price.toLocaleString()} × ${100 - c.depreciationPct}%</span></div><div class="calc-value">£${residualValue.toLocaleString()}</div></div>
+          <div class="calc-row calc-row-total"><div class="calc-label">Depreciation Cost<br><span class="calc-formula">£${c.price.toLocaleString()} × ${c.depreciationPct}%</span></div><div class="calc-value">£${co.depreciation.toLocaleString()}</div></div>
+        </div>
+
+        <div class="detail-section">
+          <h3>Fuel / Energy Calculation</h3>
+          ${fuelCalcHtml}
+        </div>
+
+        <div class="detail-section">
+          <h3>Road Tax (VED) Calculation</h3>
+          ${vedCalcHtml}
+        </div>
+
+        <div class="detail-section">
+          <h3>Servicing, Insurance &amp; Other</h3>
+          <div class="calc-row"><div class="calc-label">Annual service cost</div><div class="calc-value">£${c.annualService}/yr</div></div>
+          <div class="calc-row"><div class="calc-label">3-year servicing<br><span class="calc-formula">£${c.annualService} × 3</span></div><div class="calc-value">£${co.servicing.toLocaleString()}</div></div>
+          <div class="calc-row" style="margin-top:8px;"><div class="calc-label">Base annual insurance</div><div class="calc-value">£${c.annualInsurance}/yr</div></div>
+          <div class="calc-row"><div class="calc-label">Insurance multiplier</div><div class="calc-value">×${insuranceMult}</div></div>
+          <div class="calc-row"><div class="calc-label">3-year insurance<br><span class="calc-formula">£${c.annualInsurance} × ${insuranceMult} × 3</span></div><div class="calc-value">£${co.insurance.toLocaleString()}</div></div>
+          <div class="calc-row" style="margin-top:8px;"><div class="calc-label">MOT (1 test at year 3)<br><span class="calc-formula">New cars exempt yrs 1–2</span></div><div class="calc-value">£${motCostVal}</div></div>
+          <div class="calc-row" style="margin-top:8px;"><div class="calc-label">Tyres (estimated)<br><span class="calc-formula">Based on ${annualMiles.toLocaleString()} mi/yr, ${c.fuel === 'electric' ? '16k' : '20k'} mi tyre life</span></div><div class="calc-value">£${co.tyres.toLocaleString()}</div></div>
+          <div class="calc-row"><div class="calc-label">Breakdown cover<br><span class="calc-formula">£${breakdownAnnual}/yr × 3</span></div><div class="calc-value">£${co.breakdown}</div></div>
+          ${co.congestion > 0 ? `<div class="calc-row"><div class="calc-label">Congestion charge<br><span class="calc-formula">£15/day × ${congestionDays} days × 3 yrs (electric exempt)</span></div><div class="calc-value">£${co.congestion.toLocaleString()}</div></div>` : ''}
+        </div>
+      </div>
+
+      <div class="detail-section" style="margin-top:16px;">
+        <h3>Total Cost Summary</h3>
+        <div class="calc-row"><div class="calc-label">Depreciation</div><div class="calc-value">£${co.depreciation.toLocaleString()}</div></div>
+        <div class="calc-row"><div class="calc-label">Fuel / Energy</div><div class="calc-value">£${co.fuelCost.toLocaleString()}</div></div>
+        <div class="calc-row"><div class="calc-label">Road Tax (VED)</div><div class="calc-value">£${co.ved.toLocaleString()}</div></div>
+        <div class="calc-row"><div class="calc-label">Servicing</div><div class="calc-value">£${co.servicing.toLocaleString()}</div></div>
+        <div class="calc-row"><div class="calc-label">Insurance</div><div class="calc-value">£${co.insurance.toLocaleString()}</div></div>
+        <div class="calc-row"><div class="calc-label">Tyres</div><div class="calc-value">£${co.tyres.toLocaleString()}</div></div>
+        <div class="calc-row"><div class="calc-label">Breakdown Cover</div><div class="calc-value">£${co.breakdown}</div></div>
+        <div class="calc-row"><div class="calc-label">MOT</div><div class="calc-value">£${co.mot}</div></div>
+        ${co.congestion > 0 ? `<div class="calc-row"><div class="calc-label">Congestion Charge</div><div class="calc-value">£${co.congestion.toLocaleString()}</div></div>` : ''}
+        <div class="calc-row calc-row-total"><div class="calc-label">Grand Total (3 Years)</div><div class="calc-value">£${co.total.toLocaleString()}</div></div>
+        <div class="calc-row"><div class="calc-label">Per month</div><div class="calc-value">£${co.monthly}</div></div>
+        <div class="calc-row"><div class="calc-label">Per mile<br><span class="calc-formula">£${co.runningCost.toLocaleString()} ÷ ${totalMiles.toLocaleString()} miles</span></div><div class="calc-value">£${co.costPerMile}</div></div>
+      </div>
+      ${co.salSac ? `
+      <div class="detail-section" style="margin-top:16px; background:#eff6ff; border: 2px solid #93c5fd;">
+        <h3 style="color:#1d4ed8;">Salary Sacrifice Cost</h3>
+        <p style="font-size:0.82rem; color:var(--text-muted); margin-bottom:12px;">Net monthly cost is all-in (insurance, servicing, tyres, breakdown, BIK, VED included). Only fuel is extra.</p>
+        ${co.salSac.yr1 ? `
+        <div class="calc-row"><div class="calc-label">Year 1 rental</div><div class="calc-value">£${co.salSac.yr1}/mo → £${(co.salSac.yr1 * 12).toLocaleString()}/yr</div></div>
+        <div class="calc-row"><div class="calc-label">Year 2 rental</div><div class="calc-value">£${co.salSac.yr2}/mo → £${(co.salSac.yr2 * 12).toLocaleString()}/yr</div></div>
+        <div class="calc-row"><div class="calc-label">Year 3 rental</div><div class="calc-value">£${co.salSac.yr3}/mo → £${(co.salSac.yr3 * 12).toLocaleString()}/yr</div></div>
+        <div class="calc-row"><div class="calc-label">Average monthly<br><span class="calc-formula">(£${co.salSac.yr1} + £${co.salSac.yr2} + £${co.salSac.yr3}) ÷ 3</span></div><div class="calc-value" style="font-weight:700;">£${co.salSac.netMonthly}/mo</div></div>
+        ` : `
+        <div class="calc-row"><div class="calc-label">Net monthly cost (from take-home pay)</div><div class="calc-value" style="font-weight:700;">£${co.salSac.netMonthly}/mo</div></div>
+        `}
+        <div class="calc-row"><div class="calc-label">Scheme cost over 3 years<br><span class="calc-formula">${co.salSac.yr1 ? `(£${co.salSac.yr1} + £${co.salSac.yr2} + £${co.salSac.yr3}) × 12` : `£${co.salSac.netMonthly} × 36`}</span></div><div class="calc-value">£${co.salSac.netCost3yr.toLocaleString()}</div></div>
+        <div class="calc-row"><div class="calc-label">Fuel cost (only extra on top)<br><span class="calc-formula">3-year fuel/energy cost</span></div><div class="calc-value">£${co.salSac.fuelCost.toLocaleString()}</div></div>
+        <div class="calc-row calc-row-total" style="font-size:1.05rem;"><div class="calc-label">True Total Cost<br><span class="calc-formula">Scheme cost + fuel</span></div><div class="calc-value" style="color:#1d4ed8;">£${co.salSac.totalCost.toLocaleString()}</div></div>
+        <div class="calc-row"><div class="calc-label">Effective monthly cost</div><div class="calc-value" style="color:#1d4ed8;">£${co.salSac.monthlyCost}/mo</div></div>
+        <div class="calc-row" style="margin-top:12px; background:${co.salSac.totalCost < co.total ? '#d1fae5' : '#fee2e2'}; padding:10px; border-radius:6px;"><div class="calc-label"><strong>${co.salSac.totalCost < co.total ? 'Salary sacrifice SAVES you' : 'Salary sacrifice costs MORE by'}</strong> vs buying outright over 3 years</div><div class="calc-value"><strong style="font-size:1.1rem;">£${Math.abs(co.total - co.salSac.totalCost).toLocaleString()}</strong></div></div>
+      </div>` : ''}`;
+}
+
+function calcVEDyr1(co2) {
+  if (co2 === 0) return 0;
+  if (co2 <= 50) return 10;
+  if (co2 <= 75) return 30;
+  if (co2 <= 90) return 135;
+  if (co2 <= 100) return 175;
+  if (co2 <= 110) return 195;
+  if (co2 <= 130) return 220;
+  if (co2 <= 150) return 270;
+  if (co2 <= 170) return 680;
+  if (co2 <= 190) return 1095;
+  if (co2 <= 225) return 1650;
+  if (co2 <= 255) return 2340;
+  return 2745;
+}
+
+// ============ INTERACTIONS ============
+function sortBy(key) {
+  if (currentSort.key === key) {
+    currentSort.dir = currentSort.dir === 'asc' ? 'desc' : 'asc';
+  } else {
+    currentSort.key = key;
+    currentSort.dir = 'asc';
+  }
+  renderTable();
+}
+
+function setFuelFilter(filter, btn) {
+  currentFuelFilter = filter;
+  document.querySelectorAll('.filter-btn[data-filter]').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  applyFilters();
+}
+
+function setStarFilter(level) {
+  // Toggle: clicking active filter turns it off
+  minStarFilter = (minStarFilter === level) ? 0 : level;
+  [1, 2, 3].forEach(n => {
+    const btn = document.getElementById('favFilter' + n);
+    if (btn) btn.classList.toggle('active', n === minStarFilter);
+  });
+  applyFilters();
+}
+
+function applyFilters() {
+  renderTable();
+}
+
+function openModal(idx) {
+  const car = cars[idx];
+  if (!car) return;
+  const costs = calcCarCosts(car);
+  const backdrop = document.getElementById('modalBackdrop');
+  const body = document.getElementById('modalBody');
+  body.innerHTML = `<button class="modal-edit-btn" onclick="editCar(${idx})" title="Edit this car">✎</button>` + buildDetailPanel(car, costs, idx);
+  backdrop.classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeModal() {
+  document.getElementById('modalBackdrop').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') closeModal();
+});
+
+function deleteCar(idx) {
+  if (confirm('Remove ' + cars[idx].name + ' from the list?')) {
+    cars.splice(idx, 1);
+    recalcAll();
+  }
+}
+
+function toggleSection(id) {
+  const content = document.getElementById(id + '-content');
+  const arrow = document.getElementById(id + '-arrow');
+  if (content.style.maxHeight && content.style.maxHeight !== '0px') {
+    content.style.maxHeight = '0px';
+    arrow.classList.add('collapsed');
+  } else {
+    content.style.maxHeight = content.scrollHeight + 'px';
+    arrow.classList.remove('collapsed');
+  }
+}
+
+// Efficiency label switch
+document.getElementById('newFuel').addEventListener('change', function() {
+  const lbl = document.getElementById('effLabel');
+  lbl.textContent = this.value === 'electric' ? 'Efficiency (mi/kWh)' : 'Fuel Efficiency (MPG)';
+});
+
+function addCar() {
+  const name = document.getElementById('newName').value.trim();
+  const fuel = document.getElementById('newFuel').value;
+  const body = document.getElementById('newBody').value;
+  const price = parseFloat(document.getElementById('newPrice').value);
+  const eff = parseFloat(document.getElementById('newEfficiency').value);
+  const co2 = parseFloat(document.getElementById('newCo2').value) || 0;
+  const service = parseFloat(document.getElementById('newService').value) || (fuel === 'electric' ? 120 : 300);
+  const dep = parseFloat(document.getElementById('newDeprec').value) || 45;
+  const ins = parseFloat(document.getElementById('newInsurance').value) || 500;
+
+  if (!name || !price || !eff) {
+    alert('Please fill in at least the name, price, and efficiency.');
+    return;
+  }
+
+  // Salary sacrifice fields — 3 yearly rates, averaged
+  const ss1 = parseFloat(document.getElementById('newSS1').value) || 0;
+  const ss2 = parseFloat(document.getElementById('newSS2').value) || 0;
+  const ss3 = parseFloat(document.getElementById('newSS3').value) || 0;
+  const ssAvg = (ss1 + ss2 + ss3) / 3;
+
+  // Extract make from name (first word)
+  const make = name.split(' ')[0];
+  const car = {
+    name, make, fuel, body, price, efficiency: eff, co2,
+    annualService: service, depreciationPct: dep, annualInsurance: ins
+  };
+
+  // Add salary sacrifice data if any year has a value
+  if (ssAvg > 0) {
+    car.salSac = {
+      yr1: ss1, yr2: ss2, yr3: ss3,
+      netMonthly: Math.round(ssAvg * 100) / 100
+    };
+  }
+
+  cars.push(car);
+  // Auto-favourite user-added cars (1 star)
+  starRatings[car.name] = 1;
+  resetForm();
+  populateMakeFilter();
+  recalcAll();
+}
+
+function resetForm() {
+  ['newName', 'newPrice', 'newEfficiency', 'newCo2', 'newService', 'newDeprec', 'newInsurance', 'newSS1', 'newSS2', 'newSS3'].forEach(id => {
+    document.getElementById(id).value = '';
+  });
+  document.getElementById('newSSAvg').value = '—';
+}
+
+function updateSSAvg() {
+  const v1 = parseFloat(document.getElementById('newSS1').value) || 0;
+  const v2 = parseFloat(document.getElementById('newSS2').value) || 0;
+  const v3 = parseFloat(document.getElementById('newSS3').value) || 0;
+  const avg = (v1 + v2 + v3) / 3;
+  document.getElementById('newSSAvg').value = avg > 0 ? '£' + avg.toFixed(2) : '—';
+}
+
+function updateEditSSAvg() {
+  const v1 = parseFloat(document.getElementById('ed_ss1').value) || 0;
+  const v2 = parseFloat(document.getElementById('ed_ss2').value) || 0;
+  const v3 = parseFloat(document.getElementById('ed_ss3').value) || 0;
+  const avg = (v1 + v2 + v3) / 3;
+  document.getElementById('ed_ssAvg').value = avg > 0 ? '£' + avg.toFixed(2) : '—';
+}
+
+// ============ VIEW TOGGLE ============
+let currentView = 'table';
+
+function setView(view) {
+  currentView = view;
+  document.getElementById('viewTable').classList.toggle('active', view === 'table');
+  document.getElementById('viewCards').classList.toggle('active', view === 'cards');
+  document.getElementById('tableContainer').style.display = view === 'table' ? '' : 'none';
+  document.getElementById('cardContainer').style.display = view === 'cards' ? '' : 'none';
+  recalcAll();
+}
+
+// ============ COLOUR-CODED COSTS ============
+function costColor(value, min, max) {
+  if (max === min) return '';
+  const ratio = (value - min) / (max - min);
+  if (ratio <= 0.2) return 'cost-green';
+  if (ratio <= 0.4) return 'cost-lime';
+  if (ratio <= 0.6) return 'cost-amber';
+  if (ratio <= 0.8) return 'cost-orange';
+  return 'cost-red';
+}
+
+function totalColorStyle(value, min, max) {
+  if (max === min) return '';
+  const ratio = Math.max(0, Math.min(1, (value - min) / (max - min)));
+  // Green (#059669) → Amber (#d97706) → Red (#dc2626)
+  let r, g, b;
+  if (ratio < 0.5) {
+    const t = ratio * 2;
+    r = Math.round(5 + t * (217 - 5));
+    g = Math.round(150 + t * (119 - 150));
+    b = Math.round(105 + t * (6 - 105));
+  } else {
+    const t = (ratio - 0.5) * 2;
+    r = Math.round(217 + t * (220 - 217));
+    g = Math.round(119 + t * (38 - 119));
+    b = Math.round(6 + t * (38 - 6));
+  }
+  return `color:rgb(${r},${g},${b})`;
+}
+
+// ============ COMPARISON ============
+const compareSet = new Set(); // car names
+
+function toggleCompare(name, event) {
+  if (event) event.stopPropagation();
+  if (compareSet.has(name)) {
+    compareSet.delete(name);
+  } else if (compareSet.size < 4) {
+    compareSet.add(name);
+  } else {
+    return; // max 4
+  }
+  recalcAll();
+  renderCompare();
+}
+
+function removeCompare(name) {
+  compareSet.delete(name);
+  recalcAll();
+  renderCompare();
+}
+
+function clearCompare() {
+  compareSet.clear();
+  recalcAll();
+  renderCompare();
+}
+
+function renderCompare() {
+  const panel = document.getElementById('comparePanel');
+  if (compareSet.size < 2) {
+    panel.classList.remove('visible');
+    return;
+  }
+  panel.classList.add('visible');
+  document.getElementById('compareCount').textContent = `(${compareSet.size} cars)`;
+
+  const selected = [...compareSet].map(name => {
+    const car = cars.find(c => c.name === name);
+    return car ? { ...car, costs: calcCarCosts(car) } : null;
+  }).filter(Boolean);
+
+  // Chips bar
+  document.getElementById('compareBar').innerHTML = selected.map(c =>
+    `<span class="compare-chip">${c.name} <button onclick="removeCompare('${c.name.replace(/'/g, "\\'")}')">✕</button></span>`
+  ).join('') + ` <button class="filter-btn" onclick="clearCompare()" style="font-size:0.72rem;color:var(--text-muted);border-color:var(--border);">Clear All</button>`;
+
+  // Comparison rows
+  const cols = selected.length;
+  const gridCols = `grid-template-columns: 140px repeat(${cols}, 1fr)`;
+
+  const rows = [
+    { label: 'Price', vals: selected.map(c => c.price), fmt: v => '£' + v.toLocaleString() },
+    { label: 'Fuel', vals: selected.map(c => fuelLabel(c.fuel)), fmt: v => v, noColor: true },
+    { label: 'Efficiency', vals: selected.map(c => c.efficiency), fmt: (v, i) => selected[i].fuel === 'electric' ? v + ' mi/kWh' : v + ' MPG', better: 'high' },
+    { label: 'CO2', vals: selected.map(c => c.co2), fmt: v => v + ' g/km', better: 'low' },
+    { label: 'Depreciation', vals: selected.map(c => c.costs.depreciation), fmt: v => '£' + v.toLocaleString() },
+    { label: 'Fuel Cost', vals: selected.map(c => c.costs.fuelCost), fmt: v => '£' + v.toLocaleString() },
+    { label: 'Road Tax', vals: selected.map(c => c.costs.ved), fmt: v => '£' + v.toLocaleString() },
+    { label: 'Insurance', vals: selected.map(c => c.costs.insurance), fmt: v => '£' + v.toLocaleString() },
+    { label: '3yr Total', vals: selected.map(c => effectiveCost(c.costs)), fmt: v => '£' + v.toLocaleString(), bold: true },
+    { label: 'Per Month', vals: selected.map(c => effectiveMonthly(c.costs)), fmt: v => '£' + v + '/mo', bold: true },
+    { label: '£ per Mile', vals: selected.map(c => c.costs.costPerMile), fmt: v => '£' + v },
+  ];
+
+  let html = '';
+  rows.forEach(row => {
+    const numVals = row.vals.filter(v => typeof v === 'number');
+    const min = Math.min(...numVals);
+    const max = Math.max(...numVals);
+    const better = row.better || 'low';
+
+    html += `<div class="compare-row" style="${gridCols}">`;
+    html += `<div class="compare-label">${row.label}</div>`;
+    row.vals.forEach((v, i) => {
+      let cls = '';
+      if (!row.noColor && typeof v === 'number' && min !== max) {
+        const bestVal = better === 'low' ? min : max;
+        const worstVal = better === 'low' ? max : min;
+        if (v === bestVal) cls = 'best';
+        else if (v === worstVal) cls = 'worst';
+      }
+      html += `<div class="compare-cell ${cls}" ${row.bold ? 'style="font-weight:700;font-size:0.95rem;"' : ''}>${row.fmt(v, i)}</div>`;
+    });
+    html += '</div>';
+  });
+
+  document.getElementById('compareContent').innerHTML = html;
+}
+
+// ============ CHARTS ============
+let currentChart = 'stacked';
+
+function switchChart(type, btn) {
+  currentChart = type;
+  document.querySelectorAll('.charts-tabs button').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  renderChart();
+}
+
+function renderChart() {
+  const canvas = document.getElementById('chartCanvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const filtered = getFilteredCars();
+  const withCosts = filtered.map(c => ({ ...c, costs: calcCarCosts(c) }));
+  withCosts.sort((a, b) => effectiveCost(a.costs) - effectiveCost(b.costs));
+
+  // High-DPI support
+  const dpr = window.devicePixelRatio || 1;
+  const wrap = canvas.parentElement;
+  const containerW = wrap ? wrap.clientWidth : 900;
+
+  let displayW, displayH;
+  if (currentChart === 'stacked') {
+    displayW = containerW;
+    displayH = Math.max(500, withCosts.length * 38 + 80);
+  } else if (currentChart === 'scatter') {
+    displayW = containerW;
+    displayH = 550;
+  } else {
+    displayW = containerW;
+    displayH = 550;
+  }
+
+  canvas.style.width = displayW + 'px';
+  canvas.style.height = displayH + 'px';
+  canvas.width = Math.round(displayW * dpr);
+  canvas.height = Math.round(displayH * dpr);
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.clearRect(0, 0, displayW, displayH);
+
+  if (withCosts.length === 0) {
+    ctx.fillStyle = '#94a3b8';
+    ctx.font = '14px -apple-system, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('No cars to chart. Adjust filters.', displayW / 2, displayH / 2);
+    return;
+  }
+
+  if (currentChart === 'stacked') drawStackedBars(ctx, withCosts, displayW, displayH);
+  else if (currentChart === 'scatter') drawScatter(ctx, withCosts, displayW, displayH);
+  else if (currentChart === 'timeline') drawTimeline(ctx, withCosts, displayW, displayH);
+}
+
+function drawStackedBars(ctx, data, w, h) {
+  const cats = [
+    { key: 'depreciation', label: 'Depreciation', color: '#6366f1' },
+    { key: 'fuelCost', label: 'Fuel', color: '#f59e0b' },
+    { key: 'insurance', label: 'Insurance', color: '#ef4444' },
+    { key: 'ved', label: 'VED', color: '#3b82f6' },
+    { key: 'servicing', label: 'Service', color: '#10b981' },
+    { key: 'tyres', label: 'Tyres', color: '#ec4899' },
+    { key: 'breakdown', label: 'B/down', color: '#14b8a6' },
+    { key: 'mot', label: 'MOT', color: '#8b5cf6' },
+  ];
+
+  const leftM = Math.min(240, w * 0.25);
+  const margin = { top: 50, right: 90, bottom: 20, left: leftM };
+  const chartW = w - margin.left - margin.right;
+  const chartH = h - margin.top - margin.bottom;
+  const barH = Math.max(16, Math.min(28, (chartH / data.length) - 6));
+  const totalBarSpace = barH * data.length + 6 * (data.length - 1);
+  const startY = margin.top + Math.max(0, (chartH - totalBarSpace) / 2);
+  const maxVal = Math.max(...data.map(c => c.costs.salSac ? c.costs.salSac.totalCost : c.costs.total));
+
+  // Legend — two rows if needed
+  ctx.font = '12px -apple-system, sans-serif';
+  let lx = margin.left;
+  const ly = 14;
+  cats.forEach(cat => {
+    const textW = ctx.measureText(cat.label).width + 24;
+    if (lx + textW > w - margin.right) { lx = margin.left; }
+    ctx.fillStyle = cat.color;
+    ctx.fillRect(lx, ly, 14, 14);
+    ctx.fillStyle = '#475569';
+    ctx.textAlign = 'left';
+    ctx.fillText(cat.label, lx + 18, ly + 11);
+    lx += textW + 12;
+  });
+  // Sal sac legend
+  ctx.fillStyle = '#93c5fd';
+  ctx.fillRect(lx, ly, 14, 14);
+  ctx.fillStyle = '#475569';
+  ctx.fillText('Scheme', lx + 18, ly + 11);
+
+  data.forEach((c, i) => {
+    const co = c.costs;
+    const y = startY + i * (barH + 6);
+    let x = margin.left;
+
+    // Car name — truncate to fit left margin
+    ctx.fillStyle = '#1e293b';
+    ctx.font = '12px -apple-system, sans-serif';
+    ctx.textAlign = 'right';
+    let label = c.name;
+    while (ctx.measureText(label).width > leftM - 16 && label.length > 10) {
+      label = label.slice(0, -2) + '…';
+    }
+    ctx.fillText(label, margin.left - 10, y + barH / 2 + 4);
+    ctx.textAlign = 'left';
+
+    if (co.salSac) {
+      const schemeW = (co.salSac.netCost3yr / maxVal) * chartW;
+      const fuelW = (co.salSac.fuelCost / maxVal) * chartW;
+      ctx.fillStyle = '#93c5fd';
+      roundRect(ctx, x, y, schemeW, barH, 3);
+      ctx.fillStyle = '#f59e0b';
+      ctx.fillRect(x + schemeW, y, fuelW, barH);
+      ctx.fillStyle = '#1d4ed8';
+      ctx.font = 'bold 11px -apple-system, sans-serif';
+      ctx.fillText('£' + co.salSac.totalCost.toLocaleString(), x + schemeW + fuelW + 8, y + barH / 2 + 4);
+    } else {
+      cats.forEach(cat => {
+        const val = co[cat.key] || 0;
+        const segW = (val / maxVal) * chartW;
+        ctx.fillStyle = cat.color;
+        ctx.fillRect(x, y, Math.max(segW, 0.5), barH);
+        x += segW;
+      });
+      ctx.fillStyle = '#475569';
+      ctx.font = 'bold 11px -apple-system, sans-serif';
+      ctx.fillText('£' + co.total.toLocaleString(), x + 8, y + barH / 2 + 4);
+    }
+  });
+}
+
+function roundRect(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y); ctx.lineTo(x + w - r, y);
+  ctx.arcTo(x + w, y, x + w, y + r, r); ctx.lineTo(x + w, y + h - r);
+  ctx.arcTo(x + w, y + h, x + w - r, y + h, r); ctx.lineTo(x + r, y + h);
+  ctx.arcTo(x, y + h, x, y + h - r, r); ctx.lineTo(x, y + r);
+  ctx.arcTo(x, y, x + r, y, r); ctx.fill();
+}
+
+function drawScatter(ctx, data, w, h) {
+  const margin = { top: 40, right: 20, bottom: 55, left: 80 };
+  const chartW = w - margin.left - margin.right;
+  const chartH = h - margin.top - margin.bottom;
+  const fuelColors = { electric: '#059669', petrol: '#d97706', diesel: '#64748b', phev: '#1d4ed8' };
+
+  // Separate electric (mi/kWh, scale ~2-5) from ICE (MPG, scale ~30-70)
+  const hasElec = data.some(c => c.fuel === 'electric');
+  const hasICE = data.some(c => c.fuel !== 'electric');
+
+  // Use one chart but with a sensible normalised X-axis
+  // Normalise efficiency to 0-1 range within each fuel group so they spread nicely
+  const elecCars = data.filter(c => c.fuel === 'electric');
+  const iceCars = data.filter(c => c.fuel !== 'electric');
+
+  const costVals = data.map(c => effectiveCost(c.costs));
+  const minCost = Math.min(...costVals) * 0.9;
+  const maxCost = Math.max(...costVals) * 1.05;
+
+  // Grid
+  ctx.strokeStyle = '#e2e8f0'; ctx.lineWidth = 1;
+  for (let i = 0; i <= 5; i++) {
+    const y = margin.top + (i / 5) * chartH;
+    ctx.beginPath(); ctx.moveTo(margin.left, y); ctx.lineTo(w - margin.right, y); ctx.stroke();
+    ctx.fillStyle = '#94a3b8'; ctx.font = '11px -apple-system, sans-serif'; ctx.textAlign = 'right';
+    ctx.fillText('£' + Math.round(maxCost - (i / 5) * (maxCost - minCost)).toLocaleString(), margin.left - 10, y + 4);
+  }
+
+  // Y axis label
+  ctx.fillStyle = '#64748b'; ctx.font = 'bold 12px -apple-system, sans-serif';
+  ctx.save(); ctx.translate(16, margin.top + chartH / 2); ctx.rotate(-Math.PI / 2);
+  ctx.textAlign = 'center'; ctx.fillText('3-Year Total Cost', 0, 0); ctx.restore();
+
+  // Split chart into two halves if both fuel groups exist
+  const splitX = hasElec && hasICE ? margin.left + chartW * 0.4 : (hasElec ? margin.left + chartW : margin.left);
+  const elecW = splitX - margin.left;
+  const iceX = hasElec && hasICE ? splitX + 30 : margin.left;
+  const iceW = w - margin.right - iceX;
+
+  // Divider
+  if (hasElec && hasICE) {
+    ctx.strokeStyle = '#cbd5e1'; ctx.lineWidth = 1; ctx.setLineDash([4, 4]);
+    ctx.beginPath(); ctx.moveTo(splitX + 15, margin.top); ctx.lineTo(splitX + 15, margin.top + chartH); ctx.stroke();
+    ctx.setLineDash([]);
+  }
+
+  // Section labels — X-axis
+  ctx.font = 'bold 12px -apple-system, sans-serif'; ctx.textAlign = 'center'; ctx.fillStyle = '#475569';
+  if (hasElec) ctx.fillText('← Less efficient    Electric (mi/kWh)    More efficient →', margin.left + elecW / 2, h - 8);
+  if (hasICE) ctx.fillText('← Less efficient    Petrol / Diesel / PHEV (MPG)    More efficient →', iceX + iceW / 2, h - 8);
+
+  // Y-axis arrow hint
+  ctx.save(); ctx.translate(margin.left - 55, margin.top + chartH / 2); ctx.rotate(-Math.PI / 2);
+  ctx.fillStyle = '#94a3b8'; ctx.font = '10px -apple-system, sans-serif'; ctx.textAlign = 'center';
+  ctx.fillText('← Cheaper                More expensive →', 0, 0);
+  ctx.restore();
+
+  // Label collision detection
+  const placedLabels = [];
+  function canPlace(lx, ly, lw, lh) {
+    for (const p of placedLabels) {
+      if (lx < p.x + p.w && lx + lw > p.x && ly < p.y + p.h && ly + lh > p.y) return false;
+    }
+    return true;
+  }
+
+  function plotGroup(cars, areaX, areaW, unit) {
+    if (cars.length === 0) return;
+    const effs = cars.map(c => c.efficiency);
+    const eMin = Math.min(...effs) * 0.9;
+    const eMax = Math.max(...effs) * 1.1;
+
+    // X axis ticks
+    for (let i = 0; i <= 4; i++) {
+      const x = areaX + (i / 4) * areaW;
+      ctx.strokeStyle = '#f1f5f9'; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(x, margin.top); ctx.lineTo(x, margin.top + chartH); ctx.stroke();
+      ctx.fillStyle = '#94a3b8'; ctx.font = '10px -apple-system, sans-serif'; ctx.textAlign = 'center';
+      ctx.fillText((eMin + (i / 4) * (eMax - eMin)).toFixed(unit === 'mi/kWh' ? 1 : 0), x, h - margin.bottom + 16);
+    }
+
+    // Sweet spot zone — bottom-right = cheap + efficient
+    ctx.fillStyle = 'rgba(5, 150, 105, 0.06)';
+    ctx.fillRect(areaX + areaW * 0.5, margin.top + chartH * 0.5, areaW * 0.5, chartH * 0.5);
+    // "Best value" label in sweet spot
+    ctx.fillStyle = 'rgba(5, 150, 105, 0.25)';
+    ctx.font = 'bold 11px -apple-system, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('✦ Best value zone', areaX + areaW * 0.75, margin.top + chartH * 0.55);
+
+    // Dots + labels
+    cars.forEach(c => {
+      const eff = c.efficiency;
+      const cost = effectiveCost(c.costs);
+      const x = areaX + ((eff - eMin) / (eMax - eMin)) * areaW;
+      const y = margin.top + ((maxCost - cost) / (maxCost - minCost)) * chartH;
+      const r = 7;
+
+      ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2);
+      ctx.fillStyle = fuelColors[c.fuel] || '#94a3b8'; ctx.fill();
+      ctx.strokeStyle = 'white'; ctx.lineWidth = 2; ctx.stroke();
+
+      // Smart label placement — try right, left, above, below
+      ctx.font = '10px -apple-system, sans-serif';
+      const shortName = c.name.length > 22 ? c.name.slice(0, 20) + '…' : c.name;
+      const tw = ctx.measureText(shortName).width;
+      const th = 12;
+      const positions = [
+        { lx: x + r + 4, ly: y - th / 2 },
+        { lx: x - r - tw - 4, ly: y - th / 2 },
+        { lx: x - tw / 2, ly: y - r - th - 2 },
+        { lx: x - tw / 2, ly: y + r + 4 },
+      ];
+      let placed = false;
+      for (const pos of positions) {
+        if (canPlace(pos.lx, pos.ly, tw, th)) {
+          ctx.fillStyle = '#334155'; ctx.textAlign = 'left';
+          ctx.fillText(shortName, pos.lx, pos.ly + th - 2);
+          placedLabels.push({ x: pos.lx, y: pos.ly, w: tw, h: th });
+          placed = true; break;
+        }
+      }
+      if (!placed) {
+        // Force place with slight transparency
+        ctx.fillStyle = 'rgba(51,65,85,0.5)'; ctx.textAlign = 'left';
+        ctx.fillText(shortName, x + r + 4, y + 3);
+      }
+    });
+  }
+
+  if (hasElec) plotGroup(elecCars, margin.left, elecW, 'mi/kWh');
+  if (hasICE) plotGroup(iceCars, iceX, iceW, 'MPG');
+
+  // Legend
+  ctx.textAlign = 'left'; let lx = margin.left;
+  Object.entries(fuelColors).forEach(([fuel, color]) => {
+    ctx.beginPath(); ctx.arc(lx + 6, 18, 6, 0, Math.PI * 2); ctx.fillStyle = color; ctx.fill();
+    ctx.strokeStyle = 'white'; ctx.lineWidth = 1.5; ctx.stroke();
+    ctx.fillStyle = '#475569'; ctx.font = '11px -apple-system, sans-serif';
+    ctx.fillText(fuelLabel(fuel), lx + 16, 22);
+    lx += ctx.measureText(fuelLabel(fuel)).width + 32;
+  });
+}
+
+function drawTimeline(ctx, data, w, h) {
+  const rightMargin = Math.min(220, Math.max(160, w * 0.2));
+  const margin = { top: 40, right: rightMargin, bottom: 55, left: 80 };
+  const chartW = w - margin.left - margin.right;
+  const chartH = h - margin.top - margin.bottom;
+  const months = 36;
+
+  // Use compared cars if any selected, otherwise top 8
+  let cars;
+  if (compareSet.size >= 2) {
+    cars = [...compareSet].map(name => data.find(c => c.name === name)).filter(Boolean);
+  } else {
+    cars = data.slice(0, 8);
+  }
+  if (cars.length === 0) return;
+
+  // Build cumulative monthly costs
+  const annualMiles = parseFloat(document.getElementById('annualMileage').value) || 10000;
+  const lines = cars.map(c => {
+    const co = c.costs;
+    const monthlyData = [];
+    for (let m = 1; m <= months; m++) {
+      let cum;
+      if (co.salSac) {
+        const yr1mo = co.salSac.yr1 || co.salSac.netMonthly;
+        const yr2mo = co.salSac.yr2 || co.salSac.netMonthly;
+        const yr3mo = co.salSac.yr3 || co.salSac.netMonthly;
+        let schemeCost = 0;
+        if (m <= 12) schemeCost = yr1mo * m;
+        else if (m <= 24) schemeCost = yr1mo * 12 + yr2mo * (m - 12);
+        else schemeCost = yr1mo * 12 + yr2mo * 12 + yr3mo * (m - 24);
+        const fuelSoFar = (co.fuelCost / 36) * m;
+        cum = Math.round(schemeCost + fuelSoFar);
+      } else {
+        cum = Math.round((co.total / 36) * m);
+      }
+      monthlyData.push(cum);
+    }
+    return { name: c.name, fuel: c.fuel, data: monthlyData };
+  });
+
+  // Add 10% headroom so lines don't press against the top
+  const rawMax = Math.max(...lines.map(l => l.data[months - 1]));
+  const maxCost = rawMax * 1.1;
+
+  // Grid lines and Y-axis labels
+  ctx.strokeStyle = '#e2e8f0';
+  ctx.lineWidth = 1;
+  const gridLines = 6;
+  for (let i = 0; i <= gridLines; i++) {
+    const y = margin.top + (i / gridLines) * chartH;
+    ctx.beginPath(); ctx.moveTo(margin.left, y); ctx.lineTo(margin.left + chartW, y); ctx.stroke();
+    ctx.fillStyle = '#64748b';
+    ctx.font = '12px -apple-system, BlinkMacSystemFont, sans-serif';
+    ctx.textAlign = 'right';
+    const val = Math.round(maxCost * (1 - i / gridLines));
+    ctx.fillText('£' + val.toLocaleString(), margin.left - 10, y + 4);
+  }
+
+  // X axis (months)
+  for (let m = 0; m <= 36; m += 6) {
+    const x = margin.left + (m / months) * chartW;
+    ctx.strokeStyle = '#e2e8f0';
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(x, margin.top); ctx.lineTo(x, margin.top + chartH); ctx.stroke();
+    ctx.fillStyle = '#64748b';
+    ctx.font = '12px -apple-system, BlinkMacSystemFont, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(m === 0 ? '0' : m + ' mo', x, margin.top + chartH + 20);
+  }
+
+  // Axis labels
+  ctx.fillStyle = '#475569';
+  ctx.font = 'bold 13px -apple-system, BlinkMacSystemFont, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('Month', margin.left + chartW / 2, h - 10);
+
+  // Y-axis label (rotated)
+  ctx.save();
+  ctx.translate(16, margin.top + chartH / 2);
+  ctx.rotate(-Math.PI / 2);
+  ctx.fillStyle = '#475569';
+  ctx.font = 'bold 13px -apple-system, BlinkMacSystemFont, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('Cumulative Cost', 0, 0);
+  ctx.restore();
+
+  // Draw lines with thicker strokes and dots at endpoints
+  const lineColors = ['#6366f1', '#ef4444', '#10b981', '#f59e0b', '#3b82f6', '#ec4899', '#8b5cf6', '#14b8a6',
+                       '#0891b2', '#dc2626', '#059669', '#d97706'];
+  lines.forEach((line, li) => {
+    const color = lineColors[li % lineColors.length];
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 3;
+    ctx.lineJoin = 'round';
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    line.data.forEach((val, m) => {
+      const x = margin.left + ((m + 1) / months) * chartW;
+      const y = margin.top + (1 - val / maxCost) * chartH;
+      if (m === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+    });
+    ctx.stroke();
+
+    // Dot at end of line
+    const lastX = margin.left + chartW;
+    const lastY = margin.top + (1 - line.data[months - 1] / maxCost) * chartH;
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.arc(lastX, lastY, 5, 0, Math.PI * 2);
+    ctx.fill();
+  });
+
+  // End labels with collision detection
+  const labelH = 16;
+  const labelPad = 4;
+  const placed = [];
+  const labelX = margin.left + chartW + 10;
+  const maxLabelChars = Math.floor((rightMargin - 20) / 7);
+
+  // Sort by final cost so we process from top to bottom
+  const labelData = lines.map((line, li) => {
+    const lastY = margin.top + (1 - line.data[months - 1] / maxCost) * chartH;
+    return { line, li, idealY: lastY };
+  }).sort((a, b) => a.idealY - b.idealY);
+
+  labelData.forEach(({ line, li, idealY }) => {
+    const color = lineColors[li % lineColors.length];
+    let y = idealY;
+
+    // Push down if overlapping a previously placed label
+    for (const py of placed) {
+      if (Math.abs(y - py) < labelH + labelPad) {
+        y = py + labelH + labelPad;
+      }
+    }
+    // Clamp within chart area
+    y = Math.max(margin.top + 8, Math.min(margin.top + chartH - 4, y));
+    placed.push(y);
+
+    const shortName = line.name.length > maxLabelChars ? line.name.slice(0, maxLabelChars - 1) + '…' : line.name;
+    const totalStr = '£' + line.data[months - 1].toLocaleString();
+
+    // Coloured square + name
+    ctx.fillStyle = color;
+    ctx.fillRect(labelX, y - 8, 10, 10);
+    ctx.fillStyle = '#334155';
+    ctx.font = 'bold 11px -apple-system, BlinkMacSystemFont, sans-serif';
+    ctx.textAlign = 'left';
+    ctx.fillText(shortName, labelX + 14, y);
+
+    // Total below name
+    ctx.fillStyle = '#64748b';
+    ctx.font = '10px -apple-system, BlinkMacSystemFont, sans-serif';
+    ctx.fillText(totalStr, labelX + 14, y + 12);
+  });
+
+  // Tip note
+  if (compareSet.size < 2) {
+    ctx.fillStyle = '#94a3b8';
+    ctx.font = 'italic 11px -apple-system, BlinkMacSystemFont, sans-serif';
+    ctx.textAlign = 'left';
+    ctx.fillText('Tip: Use Compare mode to show specific cars', margin.left, margin.top - 14);
+  }
+}
+
+// ============ CARD VIEW RENDER ============
+function renderCards(withCosts) {
+  const grid = document.getElementById('cardGrid');
+  if (!withCosts.length) {
+    grid.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text-muted);">No cars match your filters.</div>';
+    return;
+  }
+
+  // Find min/max for colour bars
+  const totals = withCosts.map(c => effectiveCost(c.costs));
+  const minTotal = Math.min(...totals);
+  const maxTotal = Math.max(...totals);
+
+  grid.innerHTML = withCosts.map((c, i) => {
+    const co = c.costs;
+    const carIdx = c._origIdx;
+    const effTotal = effectiveCost(co);
+    const effMo = effectiveMonthly(co);
+    const barPct = maxTotal > minTotal ? ((effTotal - minTotal) / (maxTotal - minTotal) * 100) : 50;
+    // Bar colour: green for cheap, red for expensive
+    const barColor = totalColorStyle(effTotal, minTotal, maxTotal).replace('color:', '');
+    const stars = getStars(c);
+    const isCompare = compareSet.has(c.name);
+    const isSS = !!co.salSac;
+
+    return `<div class="car-card${isCompare ? ' compare-selected' : ''}" onclick="openModal(${carIdx})">
+      <div class="card-compare-check ${isCompare ? 'checked' : ''}" onclick="toggleCompare('${c.name.replace(/'/g, "\\'")}', event)" title="Add to comparison">${isCompare ? '✓' : '+'}</div>
+      <div class="card-header">
+        <div class="card-name">${c.name}</div>
+      </div>
+      <div class="card-badges">
+        <span class="fuel-badge ${c.fuel}">${fuelLabel(c.fuel)}</span>
+        ${isSS ? '<span style="background:#dbeafe;color:#1d4ed8;font-size:0.65rem;padding:2px 6px;border-radius:3px;font-weight:700;">SAL SAC</span>' : ''}
+        <span style="font-size:0.75rem;color:var(--text-muted);">${c.body.charAt(0).toUpperCase() + c.body.slice(1)}</span>
+        <span class="star-rate" onclick="event.stopPropagation()"><span class="${stars >= 1 ? 'lit' : ''}" onclick="setStars(${carIdx},1)">★</span><span class="${stars >= 2 ? 'lit' : ''}" onclick="setStars(${carIdx},2)">★</span><span class="${stars >= 3 ? 'lit' : ''}" onclick="setStars(${carIdx},3)">★</span></span>
+      </div>
+      <div class="card-cost-bar"><div class="card-cost-fill" style="width:${barPct}%;background:${barColor || '#94a3b8'}"></div></div>
+      <div class="card-stats">
+        <div class="card-stat"><div class="stat-label">Price</div><div class="stat-value">£${c.price.toLocaleString()}</div></div>
+        <div class="card-stat"><div class="stat-label">Fuel 3yr</div><div class="stat-value">£${co.fuelCost.toLocaleString()}</div></div>
+        <div class="card-stat"><div class="stat-label">${c.fuel === 'electric' ? 'mi/kWh' : 'MPG'}</div><div class="stat-value">${c.efficiency}</div></div>
+        <div class="card-stat"><div class="stat-label">£/mile</div><div class="stat-value">£${co.costPerMile}</div></div>
+      </div>
+      <div class="card-total">
+        <div class="total-value" style="${totalColorStyle(effTotal, minTotal, maxTotal)}">£${effTotal.toLocaleString()}</div>
+        <div class="total-sub">£${effMo}/mo over 3 years${isSS ? ' (net sal sac)' : ''}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ============ INIT ============
+document.addEventListener('DOMContentLoaded', function() {
+  // Load saved state (cars, favourites, overrides, settings) from localStorage
+  loadState();
+  // Set initial max-height for open sections
+  document.getElementById('settings-content').style.maxHeight = document.getElementById('settings-content').scrollHeight + 'px';
+  document.getElementById('addcar-content').style.maxHeight = document.getElementById('addcar-content').scrollHeight + 'px';
+  document.getElementById('charts-content').style.maxHeight = document.getElementById('charts-content').scrollHeight + 'px';
+  populateMakeFilter();
+  recalcAll();
+});
+</script>
+
+<!-- Modal overlay -->
+<div class="modal-backdrop" id="modalBackdrop" onclick="if(event.target===this)closeModal()">
+  <div class="modal-panel">
+    <button class="modal-close" onclick="closeModal()">✕</button>
+    <div id="modalBody"></div>
+  </div>
+</div>
+
+</body>
+</html>
