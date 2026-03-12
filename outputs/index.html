@@ -164,23 +164,24 @@
   tbody tr:last-child { border-bottom: none; }
   td { padding: 8px 6px; white-space: nowrap; }
   td.car-name { font-weight: 600; white-space: normal; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
-  /* Column widths: ★, #, Car, Fuel, Econ, Price, Deprec, Tax, Fuel$, Service, Insure, Other, Total, /Month, £/mi, X */
+  /* Column widths: ★, #, Car, Fuel, Econ, Price, Deprec, Tax, Fuel$, Service, Insure, Other, Total, /Year, /Month, £/mi, X */
   th:nth-child(1), td:nth-child(1) { width: 4%; text-align: center; }
   th:nth-child(2), td:nth-child(2) { width: 2%; }
-  th:nth-child(3), td:nth-child(3) { width: 14%; }
+  th:nth-child(3), td:nth-child(3) { width: 13%; }
   th:nth-child(4), td:nth-child(4) { width: 5%; }
   th:nth-child(5), td:nth-child(5) { width: 5%; }
   th:nth-child(6), td:nth-child(6) { width: 6%; }
-  th:nth-child(7), td:nth-child(7) { width: 6%; }
+  th:nth-child(7), td:nth-child(7) { width: 5%; }
   th:nth-child(8), td:nth-child(8) { width: 5%; }
-  th:nth-child(9), td:nth-child(9) { width: 6%; }
-  th:nth-child(10), td:nth-child(10) { width: 6%; }
-  th:nth-child(11), td:nth-child(11) { width: 6%; }
-  th:nth-child(12), td:nth-child(12) { width: 6%; }
-  th:nth-child(13), td:nth-child(13) { width: 9%; }
+  th:nth-child(9), td:nth-child(9) { width: 5%; }
+  th:nth-child(10), td:nth-child(10) { width: 5%; }
+  th:nth-child(11), td:nth-child(11) { width: 5%; }
+  th:nth-child(12), td:nth-child(12) { width: 5%; }
+  th:nth-child(13), td:nth-child(13) { width: 8%; }
   th:nth-child(14), td:nth-child(14) { width: 6%; }
   th:nth-child(15), td:nth-child(15) { width: 5%; }
-  th:nth-child(16), td:nth-child(16) { width: 2%; }
+  th:nth-child(16), td:nth-child(16) { width: 5%; }
+  th:nth-child(17), td:nth-child(17) { width: 2%; }
   .fuel-badge {
     display: inline-block;
     padding: 2px 10px;
@@ -655,17 +656,17 @@
         </div>
         <div class="setting-group">
           <label>Petrol Price</label>
-          <input type="number" id="petrolPrice" value="1.42" min="0.50" max="3.00" step="0.01" onchange="recalcAll()">
+          <input type="number" id="petrolPrice" value="1.39" min="0.50" max="3.00" step="0.01" onchange="recalcAll()">
           <div class="unit">£ per litre</div>
         </div>
         <div class="setting-group">
           <label>Diesel Price</label>
-          <input type="number" id="dieselPrice" value="1.48" min="0.50" max="3.00" step="0.01" onchange="recalcAll()">
+          <input type="number" id="dieselPrice" value="1.56" min="0.50" max="3.00" step="0.01" onchange="recalcAll()">
           <div class="unit">£ per litre</div>
         </div>
         <div class="setting-group">
           <label>Electricity Price</label>
-          <input type="number" id="elecPrice" value="0.245" min="0.05" max="1.00" step="0.005" onchange="recalcAll()">
+          <input type="number" id="elecPrice" value="0.277" min="0.05" max="1.00" step="0.005" onchange="recalcAll()">
           <div class="unit">£ per kWh (home charging)</div>
         </div>
         <div class="setting-group">
@@ -822,6 +823,7 @@
           <th onclick="sortBy('insurance')">Insure<span class="sort-arrow" id="sort-insurance"></span></th>
           <th onclick="sortBy('other')">Other<span class="sort-arrow" id="sort-other"></span></th>
           <th onclick="sortBy('total')" style="color:var(--primary)">Total 3yr<span class="sort-arrow" id="sort-total"></span></th>
+          <th onclick="sortBy('yearly')">/Year<span class="sort-arrow" id="sort-yearly"></span></th>
           <th onclick="sortBy('monthly')">/Month<span class="sort-arrow" id="sort-monthly"></span></th>
           <th onclick="sortBy('costPerMile')">£/mi<span class="sort-arrow" id="sort-costPerMile"></span></th>
           <th></th>
@@ -964,9 +966,9 @@ function calcEVED3yr(fuelType, annualMiles) {
 
 // ============ FUEL COST ============
 function calcFuelCost3yr(fuelType, efficiency, annualMiles) {
-  const petrolPPL = parseFloat(document.getElementById('petrolPrice').value) || 1.42;
-  const dieselPPL = parseFloat(document.getElementById('dieselPrice').value) || 1.48;
-  const elecPPKWH = parseFloat(document.getElementById('elecPrice').value) || 0.245;
+  const petrolPPL = parseFloat(document.getElementById('petrolPrice').value) || 1.39;
+  const dieselPPL = parseFloat(document.getElementById('dieselPrice').value) || 1.56;
+  const elecPPKWH = parseFloat(document.getElementById('elecPrice').value) || 0.277;
 
   if (fuelType === 'electric') {
     // efficiency = miles per kWh
@@ -1570,6 +1572,7 @@ function renderTable() {
     else if (key === 'servicing') { va = a.costs.servicing; vb = b.costs.servicing; }
     else if (key === 'insurance') { va = a.costs.insurance; vb = b.costs.insurance; }
     else if (key === 'other') { va = a.costs.mot + a.costs.tyres + a.costs.breakdown + a.costs.congestion; vb = b.costs.mot + b.costs.tyres + b.costs.breakdown + b.costs.congestion; }
+    else if (key === 'yearly') { va = Math.round(effectiveCost(a.costs) / 3); vb = Math.round(effectiveCost(b.costs) / 3); }
     else if (key === 'monthly') { va = effectiveMonthly(a.costs); vb = effectiveMonthly(b.costs); }
     else if (key === 'costPerMile') { va = parseFloat(a.costs.costPerMile); vb = parseFloat(b.costs.costPerMile); }
     else { va = effectiveCost(a.costs); vb = effectiveCost(b.costs); }
@@ -1613,6 +1616,7 @@ function renderTable() {
       <td class="${costColor(co.fuelCost, ranges.fuelCost.min, ranges.fuelCost.max)}">£${co.fuelCost.toLocaleString()}</td>
       <td colspan="3" style="text-align:center;font-size:0.68rem;color:var(--text-muted);" title="Service, insurance, tyres, breakdown, MOT all included in salary sacrifice">inc. in scheme</td>
       <td class="total-cost" style="${totalColorStyle(effectiveCost(co), ranges.total.min, ranges.total.max)}" title="Net salary sacrifice cost (standard: £${co.total.toLocaleString()})">£${effectiveCost(co).toLocaleString()}<span style="display:block;font-size:0.65rem;color:var(--text-muted);">net sal sac</span></td>
+      <td style="${totalColorStyle(effectiveCost(co), ranges.total.min, ranges.total.max)}">£${Math.round(effectiveCost(co) / 3).toLocaleString()}</td>
       <td style="${totalColorStyle(effectiveCost(co), ranges.total.min, ranges.total.max)}">£${effectiveMonthly(co)}/mo</td>
       <td>£${co.costPerMile}</td>
       ` : `
@@ -1624,6 +1628,7 @@ function renderTable() {
       <td class="${costColor(co.insurance, ranges.insurance.min, ranges.insurance.max)}">£${co.insurance.toLocaleString()}</td>
       <td class="${costColor(otherTotal, ranges.other.min, ranges.other.max)}" title="MOT £${co.mot} + Tyres £${co.tyres.toLocaleString()} + Breakdown £${co.breakdown} + Congestion £${co.congestion.toLocaleString()}">£${otherTotal.toLocaleString()}</td>
       <td class="total-cost" style="${totalColorStyle(co.total, ranges.total.min, ranges.total.max)}" title="Total 3-year cost">£${co.total.toLocaleString()}</td>
+      <td style="${totalColorStyle(co.total, ranges.total.min, ranges.total.max)}">£${Math.round(co.total / 3).toLocaleString()}</td>
       <td style="${totalColorStyle(co.total, ranges.total.min, ranges.total.max)}">£${co.monthly}/mo</td>
       <td>£${co.costPerMile}</td>
       `}
@@ -1632,7 +1637,7 @@ function renderTable() {
   });
 
   if (withCosts.length === 0) {
-    html = '<tr><td colspan="16" style="text-align:center;padding:40px;color:var(--text-muted);">No cars match your filters. Try adjusting or add a new car.</td></tr>';
+    html = '<tr><td colspan="17" style="text-align:center;padding:40px;color:var(--text-muted);">No cars match your filters. Try adjusting or add a new car.</td></tr>';
   }
 
   tbody.innerHTML = html;
@@ -1645,9 +1650,9 @@ function renderTable() {
 function buildDetailPanel(c, co, carIdx) {
   const annualMiles = parseFloat(document.getElementById('annualMileage').value) || 10000;
   const totalMiles = annualMiles * 3;
-  const petrolPPL = parseFloat(document.getElementById('petrolPrice').value) || 1.42;
-  const dieselPPL = parseFloat(document.getElementById('dieselPrice').value) || 1.48;
-  const elecPPKWH = parseFloat(document.getElementById('elecPrice').value) || 0.245;
+  const petrolPPL = parseFloat(document.getElementById('petrolPrice').value) || 1.39;
+  const dieselPPL = parseFloat(document.getElementById('dieselPrice').value) || 1.56;
+  const elecPPKWH = parseFloat(document.getElementById('elecPrice').value) || 0.277;
   const motCostVal = parseFloat(document.getElementById('motCost').value) || 55;
   const insuranceMult = parseFloat(document.getElementById('insuranceMult').value) || 1.0;
   const breakdownAnnual = parseFloat(document.getElementById('breakdownCover').value) || 80;
