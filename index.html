@@ -684,6 +684,14 @@
           <div class="unit">annual RAC/AA etc.</div>
         </div>
         <div class="setting-group">
+          <label>eVED (Pay-Per-Mile)</label>
+          <select id="evedMode" onchange="recalcAll()">
+            <option value="off">Off (pre-2028)</option>
+            <option value="on">On (from April 2028)</option>
+          </select>
+          <div class="unit">3p/mi EV, 1.5p/mi PHEV — <a href="https://www.gov.uk/government/consultations/consultation-on-the-introduction-of-electric-vehicle-excise-duty-eved" target="_blank" style="color:var(--primary);">GOV.UK</a></div>
+        </div>
+        <div class="setting-group">
           <label>Congestion Charge</label>
           <select id="congestionZone" onchange="recalcAll()">
             <option value="none">Not applicable</option>
@@ -942,6 +950,18 @@ function calcVED3yr(co2, fuelType, price) {
   return total;
 }
 
+// ============ eVED PAY-PER-MILE (from April 2028) ============
+// Electric: 3p/mile, PHEV: 1.5p/mile — on top of standard VED
+function calcEVED3yr(fuelType, annualMiles) {
+  const evedMode = document.getElementById('evedMode')?.value || 'off';
+  if (evedMode !== 'on') return 0;
+  let pencePerMile = 0;
+  if (fuelType === 'electric') pencePerMile = 3;
+  else if (fuelType === 'phev') pencePerMile = 1.5;
+  else return 0;
+  return Math.round((pencePerMile / 100) * annualMiles * 3);
+}
+
 // ============ FUEL COST ============
 function calcFuelCost3yr(fuelType, efficiency, annualMiles) {
   const petrolPPL = parseFloat(document.getElementById('petrolPrice').value) || 1.42;
@@ -1079,7 +1099,8 @@ function getSettingsState() {
     insuranceMult: document.getElementById('insuranceMult')?.value,
     breakdownCover: document.getElementById('breakdownCover')?.value,
     congestionZone: document.getElementById('congestionZone')?.value,
-    congestionDays: document.getElementById('congestionDays')?.value
+    congestionDays: document.getElementById('congestionDays')?.value,
+    evedMode: document.getElementById('evedMode')?.value
   };
 }
 
@@ -1152,6 +1173,7 @@ function loadState() {
       if (s.breakdownCover) document.getElementById('breakdownCover').value = s.breakdownCover;
       if (s.congestionZone) document.getElementById('congestionZone').value = s.congestionZone;
       if (s.congestionDays) document.getElementById('congestionDays').value = s.congestionDays;
+      if (s.evedMode) document.getElementById('evedMode').value = s.evedMode;
     }
 
     // Restore sort & filter state
@@ -1408,6 +1430,7 @@ function calcCarCosts(car) {
 
   const depreciation = Math.round(car.price * (car.depreciationPct / 100));
   const ved = calcVED3yr(car.co2, car.fuel, car.price);
+  const eved = calcEVED3yr(car.fuel, annualMiles);
   const fuelCost = Math.round(calcFuelCost3yr(car.fuel, car.efficiency, annualMiles));
   const servicing = car.annualService * 3;
   const mot = motCostVal; // 1 MOT in 3 years (at year 3)
@@ -1435,13 +1458,13 @@ function calcCarCosts(car) {
     };
   }
 
-  const total = depreciation + ved + fuelCost + servicing + mot + insurance + tyres + breakdown + congestion;
+  const total = depreciation + ved + eved + fuelCost + servicing + mot + insurance + tyres + breakdown + congestion;
   const monthly = Math.round(total / 36);
-  const runningCost = ved + fuelCost + servicing + mot + insurance + tyres + breakdown + congestion;
+  const runningCost = ved + eved + fuelCost + servicing + mot + insurance + tyres + breakdown + congestion;
   const runMonthly = Math.round(runningCost / 36);
   const costPerMile = ((runningCost) / (annualMiles * 3)).toFixed(2);
 
-  return { depreciation, ved, fuelCost, servicing, mot, insurance, tyres, breakdown, congestion, total, monthly, runningCost, runMonthly, costPerMile, salSac: salSacData };
+  return { depreciation, ved, eved, fuelCost, servicing, mot, insurance, tyres, breakdown, congestion, total, monthly, runningCost, runMonthly, costPerMile, salSac: salSacData };
 }
 
 // ============ RENDER ============
@@ -1564,7 +1587,7 @@ function renderTable() {
   // Compute min/max for colour coding
   const ranges = {};
   ['depreciation','ved','fuelCost','servicing','insurance','total'].forEach(k => {
-    const vals = withCosts.map(c => k === 'total' ? effectiveCost(c.costs) : c.costs[k]);
+    const vals = withCosts.map(c => k === 'total' ? effectiveCost(c.costs) : (k === 'ved' ? c.costs.ved + c.costs.eved : c.costs[k]));
     ranges[k] = { min: Math.min(...vals), max: Math.max(...vals) };
   });
   const otherVals = withCosts.map(c => c.costs.mot + c.costs.tyres + c.costs.breakdown + c.costs.congestion);
@@ -1595,7 +1618,7 @@ function renderTable() {
       ` : `
       <td class="price-cell${priceOverrides[carIdx] ? ' overridden' : ''}" onclick="overridePrice(${carIdx}, event)" title="Click to override price">${priceOverrides[carIdx] ? `<span class="original-price">£${priceOverrides[carIdx].original.toLocaleString()}</span>£${c.price.toLocaleString()}<button class="reset-price" onclick="resetPrice(${carIdx}, event)" title="Reset to original">↺</button>` : `£${c.price.toLocaleString()}`}</td>
       <td class="${costColor(co.depreciation, ranges.depreciation.min, ranges.depreciation.max)}">£${co.depreciation.toLocaleString()}</td>
-      <td class="${costColor(co.ved, ranges.ved.min, ranges.ved.max)}">£${co.ved.toLocaleString()}</td>
+      <td class="${costColor(co.ved + co.eved, ranges.ved.min, ranges.ved.max)}">£${(co.ved + co.eved).toLocaleString()}${co.eved > 0 ? ' *' : ''}</td>
       <td class="${costColor(co.fuelCost, ranges.fuelCost.min, ranges.fuelCost.max)}">£${co.fuelCost.toLocaleString()}</td>
       <td class="${costColor(co.servicing, ranges.servicing.min, ranges.servicing.max)}">£${co.servicing.toLocaleString()}</td>
       <td class="${costColor(co.insurance, ranges.insurance.min, ranges.insurance.max)}">£${co.insurance.toLocaleString()}</td>
@@ -1675,14 +1698,19 @@ function buildDetailPanel(c, co, carIdx) {
   } else {
     vedCalcHtml += `<div class="calc-row"><div class="calc-label">Expensive car supplement<br><span class="calc-formula">Price ≤ £40,000 → not applicable</span></div><div class="calc-value">£0</div></div>`;
   }
-  vedCalcHtml += `<div class="calc-row calc-row-total"><div class="calc-label">3-Year Road Tax<br><span class="calc-formula">£${vedYr1} + £${vedStandard * 2}${expCarSupp > 0 ? ' + £' + (expCarSupp * 2) : ''}</span></div><div class="calc-value">£${co.ved.toLocaleString()}</div></div>`;
+  vedCalcHtml += `<div class="calc-row calc-row-total"><div class="calc-label">3-Year Road Tax (VED)<br><span class="calc-formula">£${vedYr1} + £${vedStandard * 2}${expCarSupp > 0 ? ' + £' + (expCarSupp * 2) : ''}</span></div><div class="calc-value">£${co.ved.toLocaleString()}</div></div>`;
+  if (co.eved > 0) {
+    const ppm = c.fuel === 'electric' ? '3p' : '1.5p';
+    vedCalcHtml += `<div class="calc-row" style="margin-top:8px;background:#fef3c7;padding:8px;border-radius:6px;"><div class="calc-label"><strong>eVED Pay-Per-Mile</strong><br><span class="calc-formula">${ppm}/mile × ${annualMiles.toLocaleString()} miles × 3 years</span></div><div class="calc-value"><strong>£${co.eved.toLocaleString()}</strong></div></div>`;
+    vedCalcHtml += `<div class="calc-row calc-row-total"><div class="calc-label">Total Road Tax (VED + eVED)</div><div class="calc-value">£${(co.ved + co.eved).toLocaleString()}</div></div>`;
+  }
 
   // Cost breakdown bar chart
   const costItems = [
     { label: 'Depreciation', value: co.depreciation, color: '#6366f1' },
     { label: 'Fuel', value: co.fuelCost, color: '#f59e0b' },
     { label: 'Insurance', value: co.insurance, color: '#ef4444' },
-    { label: 'Road Tax', value: co.ved, color: '#3b82f6' },
+    { label: 'Road Tax', value: co.ved + co.eved, color: '#3b82f6' },
     { label: 'Servicing', value: co.servicing, color: '#10b981' },
     { label: 'Tyres', value: co.tyres, color: '#ec4899' },
     { label: 'Breakdown', value: co.breakdown, color: '#14b8a6' },
@@ -1772,6 +1800,7 @@ function buildDetailPanel(c, co, carIdx) {
         <div class="calc-row"><div class="calc-label">Depreciation</div><div class="calc-value">£${co.depreciation.toLocaleString()}</div></div>
         <div class="calc-row"><div class="calc-label">Fuel / Energy</div><div class="calc-value">£${co.fuelCost.toLocaleString()}</div></div>
         <div class="calc-row"><div class="calc-label">Road Tax (VED)</div><div class="calc-value">£${co.ved.toLocaleString()}</div></div>
+        ${co.eved > 0 ? `<div class="calc-row"><div class="calc-label">eVED (Pay-Per-Mile)</div><div class="calc-value">£${co.eved.toLocaleString()}</div></div>` : ''}
         <div class="calc-row"><div class="calc-label">Servicing</div><div class="calc-value">£${co.servicing.toLocaleString()}</div></div>
         <div class="calc-row"><div class="calc-label">Insurance</div><div class="calc-value">£${co.insurance.toLocaleString()}</div></div>
         <div class="calc-row"><div class="calc-label">Tyres</div><div class="calc-value">£${co.tyres.toLocaleString()}</div></div>
@@ -2219,7 +2248,7 @@ function drawStackedBars(ctx, data, w, h) {
       ctx.fillText('£' + co.salSac.totalCost.toLocaleString(), x + schemeW + fuelW + 8, y + barH / 2 + 4);
     } else {
       cats.forEach(cat => {
-        const val = co[cat.key] || 0;
+        const val = cat.key === 'ved' ? (co.ved + co.eved) : (co[cat.key] || 0);
         const segW = (val / maxVal) * chartW;
         ctx.fillStyle = cat.color;
         ctx.fillRect(x, y, Math.max(segW, 0.5), barH);
