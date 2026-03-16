@@ -109,6 +109,10 @@
   }
   .filter-btn:hover { border-color: var(--primary); color: var(--primary); }
   .filter-btn.active { background: var(--primary); color: white; border-color: var(--primary); }
+  .make-chips { display: flex; flex-wrap: wrap; gap: 4px; }
+  .make-chip { padding: 4px 10px; border-radius: 14px; border: 1.5px solid var(--border); background: white; cursor: pointer; font-size: 0.75rem; font-weight: 500; color: var(--text); transition: all 0.15s; user-select: none; }
+  .make-chip:hover { border-color: var(--primary); color: var(--primary); }
+  .make-chip.excluded { background: #fee2e2; border-color: #fca5a5; color: #dc2626; text-decoration: line-through; opacity: 0.7; }
   .filter-select {
     padding: 5px 12px;
     border: 1.5px solid var(--border);
@@ -754,11 +758,9 @@
       <button class="filter-btn" id="favFilter2" onclick="setStarFilter(2)" title="Show 2+ stars">★★</button>
       <button class="filter-btn" id="favFilter3" onclick="setStarFilter(3)" title="Show 3 stars only">★★★</button>
     </div>
-    <div class="filter-group">
+    <div class="filter-group" style="flex-wrap:wrap;">
       <label>Manufacturer:</label>
-      <select class="filter-select" id="makeFilter" onchange="applyFilters()">
-        <option value="all">All</option>
-      </select>
+      <div id="makeChips" class="make-chips"></div>
     </div>
     <div class="filter-group">
       <label>Body Type:</label>
@@ -1105,7 +1107,8 @@ function saveState() {
       settings: getSettingsState(),
       sort: currentSort,
       fuelFilter: currentFuelFilter,
-      minStarFilter: minStarFilter
+      minStarFilter: minStarFilter,
+      excludedMakes: [...excludedMakes]
     };
     // Detect edits to built-in cars by comparing to defaults
     for (let i = 0; i < DEFAULT_CARS.length && i < cars.length; i++) {
@@ -1224,6 +1227,10 @@ function loadState() {
       minStarFilter = state.minStarFilter;
       const btn = document.getElementById('favFilter' + minStarFilter);
       if (btn) btn.classList.add('active');
+    }
+    if (state.excludedMakes && Array.isArray(state.excludedMakes)) {
+      excludedMakes.clear();
+      state.excludedMakes.forEach(m => excludedMakes.add(m));
     }
   } catch (e) { /* corrupt data — ignore, use defaults */ }
 }
@@ -1566,7 +1573,6 @@ function effectiveMonthly(co) {
 function getFilteredCars() {
   const maxPrice = parseInt(document.getElementById('priceFilter').value) || 999999;
   const bodyFilter = document.getElementById('bodyFilter').value;
-  const makeFilter = document.getElementById('makeFilter').value;
   const schemeFilter = document.getElementById('schemeFilter').value;
   const search = (document.getElementById('searchInput').value || '').toLowerCase();
 
@@ -1575,7 +1581,7 @@ function getFilteredCars() {
     if (currentFuelFilter !== 'all' && c.fuel !== currentFuelFilter) return false;
     if (c.price > maxPrice) return false;
     if (bodyFilter !== 'all' && c.body !== bodyFilter) return false;
-    if (makeFilter !== 'all' && c.make !== makeFilter) return false;
+    if (excludedMakes.size > 0 && excludedMakes.has(c.make)) return false;
     if (schemeFilter === 'salsac' && !c.salSac) return false;
     if (schemeFilter === 'standard' && c.salSac) return false;
     if (search && !c.name.toLowerCase().includes(search)) return false;
@@ -1583,10 +1589,21 @@ function getFilteredCars() {
   });
 }
 
+const excludedMakes = new Set();
+
 function populateMakeFilter() {
   const makes = [...new Set(cars.map(c => c.make))].sort();
-  const sel = document.getElementById('makeFilter');
-  sel.innerHTML = '<option value="all">All</option>' + makes.map(m => `<option value="${m}">${m}</option>`).join('');
+  const container = document.getElementById('makeChips');
+  container.innerHTML = makes.map(m =>
+    `<span class="make-chip${excludedMakes.has(m) ? ' excluded' : ''}" data-make="${m}" onclick="toggleMake('${m.replace(/'/g, "\\'")}')">${m}</span>`
+  ).join('');
+}
+
+function toggleMake(make) {
+  if (excludedMakes.has(make)) excludedMakes.delete(make);
+  else excludedMakes.add(make);
+  populateMakeFilter();
+  applyFilters();
 }
 
 function renderTable() {
