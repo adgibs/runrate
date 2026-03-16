@@ -269,7 +269,8 @@
   .edit-cancel { background: var(--border); color: var(--text); }
   .modal-edit-btn { position: absolute; top: 16px; right: 56px; width: 34px; height: 34px; border-radius: 50%; border: 1.5px solid var(--border); background: white; cursor: pointer; font-size: 0.9rem; display: flex; align-items: center; justify-content: center; transition: all 0.15s; z-index: 2; }
   .modal-edit-btn:hover { background: var(--primary-light); color: var(--primary); border-color: var(--primary); }
-  .btn-used-variant { position: absolute; top: 16px; right: 100px; padding: 6px 14px; border-radius: 20px; border: 1.5px solid var(--border); background: white; cursor: pointer; font-size: 0.75rem; font-weight: 600; color: var(--text-muted); transition: all 0.15s; z-index: 2; white-space: nowrap; }
+  .used-variant-btns { position: absolute; top: 16px; right: 100px; display: flex; gap: 4px; z-index: 2; }
+  .btn-used-variant { padding: 6px 12px; border-radius: 20px; border: 1.5px solid var(--border); background: white; cursor: pointer; font-size: 0.72rem; font-weight: 600; color: var(--text-muted); transition: all 0.15s; white-space: nowrap; }
   .btn-used-variant:hover { background: #fef3c7; color: var(--amber); border-color: var(--amber); }
   .fuel-badge.diesel { background: var(--red-light); color: #b91c1c; }
   .rank-badge {
@@ -933,9 +934,13 @@ function calcVED3yr(co2, fuelType, price, usedAge) {
     // Used car: no first-year rate, just standard rate × 3
     total = standardRate * 3;
     // Expensive car supplement: based on ORIGINAL new price (£40k threshold)
-    // Applies years 2-6 from new, so a 1yr-old car still has 4 qualifying years (our 3 overlap with 3)
+    // Applies years 2-6 from new registration
     if (price > 40000) {
-      total += 410 * 3; // all 3 years of ownership fall within the supplement window
+      // How many of our 3 ownership years fall within the supplement window (years 2-6)?
+      // Ownership starts at car age = usedAge, covers years usedAge+1 to usedAge+3
+      // Supplement applies car years 2-6
+      const suppYears = Math.max(0, Math.min(3, 6 - usedAge));
+      total += 410 * suppYears;
     }
   } else {
     let year1 = 0;
@@ -1448,8 +1453,8 @@ function calcCarCosts(car) {
   const eved = calcEVED3yr(car.fuel, annualMiles);
   const fuelCost = Math.round(calcFuelCost3yr(car.fuel, car.efficiency, annualMiles));
   const servicing = car.annualService * 3;
-  // New cars: 1 MOT at year 3. Used 1yr: 2 MOTs (car's year 3 & 4 = ownership years 2 & 3)
-  const motCount = (car.usedAge >= 1) ? 2 : 1;
+  // MOTs needed: new=1 (year 3), 1yr used=2 (car yrs 3&4), 3yr used=3 (car yrs 4,5,6)
+  const motCount = car.usedAge >= 3 ? 3 : (car.usedAge >= 1 ? 2 : 1);
   const mot = motCostVal * motCount;
   const insurance = Math.round(car.annualInsurance * insuranceMult * 3);
   const tyres = calcTyres3yr(car);
@@ -1710,6 +1715,7 @@ function buildDetailPanel(c, co, carIdx) {
   const vedCo2Band = c.fuel === 'electric' ? 'Electric (0 g/km)' : `${c.co2} g/km`;
   const isUsed = c.usedAge >= 1;
   const origNewPrice = c.originalNewPrice || c.price;
+  const usedSuppYears = isUsed ? Math.max(0, Math.min(3, 6 - c.usedAge)) : 0;
   const usedExpCarSupp = origNewPrice > 40000 ? 410 : 0;
   let vedCalcHtml = `
     <div class="calc-row"><div class="calc-label">CO2 emissions band</div><div class="calc-value">${vedCo2Band}</div></div>
@@ -1719,8 +1725,10 @@ function buildDetailPanel(c, co, carIdx) {
     <div class="calc-row" style="background:#fef3c7;padding:6px;border-radius:4px;"><div class="calc-label"><strong>Used car</strong> — year 1 rate already paid by first owner</div><div class="calc-value">—</div></div>
     <div class="calc-row"><div class="calc-label">Standard rate × 3 years<br><span class="calc-formula">£${vedStandard} × 3</span></div><div class="calc-value">£${vedStandard * 3}</div></div>
     `;
-    if (usedExpCarSupp > 0) {
-      vedCalcHtml += `<div class="calc-row"><div class="calc-label">Expensive car supplement<br><span class="calc-formula">New price £${origNewPrice.toLocaleString()} &gt; £40k → £410/yr × 3 yrs</span></div><div class="calc-value">£${usedExpCarSupp * 3}</div></div>`;
+    if (usedExpCarSupp > 0 && usedSuppYears > 0) {
+      vedCalcHtml += `<div class="calc-row"><div class="calc-label">Expensive car supplement<br><span class="calc-formula">New price £${origNewPrice.toLocaleString()} &gt; £40k → £410/yr × ${usedSuppYears} yr${usedSuppYears !== 1 ? 's' : ''} remaining</span></div><div class="calc-value">£${(usedExpCarSupp * usedSuppYears).toLocaleString()}</div></div>`;
+    } else if (usedExpCarSupp > 0 && usedSuppYears === 0) {
+      vedCalcHtml += `<div class="calc-row"><div class="calc-label">Expensive car supplement<br><span class="calc-formula">New price £${origNewPrice.toLocaleString()} &gt; £40k but past year 6 — no longer applies</span></div><div class="calc-value">£0</div></div>`;
     }
   } else {
     vedCalcHtml += `
@@ -1800,7 +1808,7 @@ function buildDetailPanel(c, co, carIdx) {
       <div class="detail-sections">
         <div class="detail-section">
           <h3>Depreciation Calculation</h3>
-          ${c.usedAge ? `<div class="calc-row" style="background:#fef3c7;padding:8px;border-radius:6px;margin-bottom:8px;"><div class="calc-label"><strong>1yr Used Car</strong><br><span class="calc-formula">Original new price: £${(c.originalNewPrice || c.price).toLocaleString()} → estimated 1yr used price</span></div><div class="calc-value"><strong>£${c.price.toLocaleString()}</strong></div></div>` : ''}
+          ${c.usedAge ? `<div class="calc-row" style="background:#fef3c7;padding:8px;border-radius:6px;margin-bottom:8px;"><div class="calc-label"><strong>${c.usedAge}yr Used Car</strong><br><span class="calc-formula">Original new price: £${(c.originalNewPrice || c.price).toLocaleString()} → estimated ${c.usedAge}yr used price</span></div><div class="calc-value"><strong>£${c.price.toLocaleString()}</strong></div></div>` : ''}
           <div class="calc-row"><div class="calc-label">Purchase price</div><div class="calc-value">£${c.price.toLocaleString()}</div></div>
           <div class="calc-row"><div class="calc-label">3-year depreciation rate${c.usedAge ? '<br><span class="calc-formula">Lower rate — steepest year 1 drop already absorbed</span>' : ''}</div><div class="calc-value">${c.depreciationPct}%</div></div>
           <div class="calc-row"><div class="calc-label">Estimated value after 3 years<br><span class="calc-formula">£${c.price.toLocaleString()} × ${100 - c.depreciationPct}%</span></div><div class="calc-value">£${residualValue.toLocaleString()}</div></div>
@@ -1824,7 +1832,7 @@ function buildDetailPanel(c, co, carIdx) {
           <div class="calc-row" style="margin-top:8px;"><div class="calc-label">Base annual insurance</div><div class="calc-value">£${c.annualInsurance}/yr</div></div>
           <div class="calc-row"><div class="calc-label">Insurance multiplier</div><div class="calc-value">×${insuranceMult}</div></div>
           <div class="calc-row"><div class="calc-label">3-year insurance<br><span class="calc-formula">£${c.annualInsurance} × ${insuranceMult} × 3</span></div><div class="calc-value">£${co.insurance.toLocaleString()}</div></div>
-          <div class="calc-row" style="margin-top:8px;"><div class="calc-label">MOT (${c.usedAge ? '2 tests — car years 3 & 4' : '1 test at year 3'})<br><span class="calc-formula">${c.usedAge ? 'Used car needs MOT from yr 2 of ownership' : 'New cars exempt yrs 1–2'}</span></div><div class="calc-value">£${co.mot}</div></div>
+          <div class="calc-row" style="margin-top:8px;"><div class="calc-label">MOT (${c.usedAge >= 3 ? '3 tests — car already 3+ yrs old' : c.usedAge >= 1 ? '2 tests — car years 3 & 4' : '1 test at year 3'})<br><span class="calc-formula">${c.usedAge >= 3 ? 'Car already needs annual MOT from day one' : c.usedAge >= 1 ? 'Used car needs MOT from yr 2 of ownership' : 'New cars exempt yrs 1–2'}</span></div><div class="calc-value">£${co.mot}</div></div>
           <div class="calc-row" style="margin-top:8px;"><div class="calc-label">Tyres (estimated)<br><span class="calc-formula">Based on ${annualMiles.toLocaleString()} mi/yr, ${c.fuel === 'electric' ? '16k' : '20k'} mi tyre life</span></div><div class="calc-value">£${co.tyres.toLocaleString()}</div></div>
           <div class="calc-row"><div class="calc-label">Breakdown cover<br><span class="calc-formula">£${breakdownAnnual}/yr × 3</span></div><div class="calc-value">£${co.breakdown}</div></div>
           ${co.congestion > 0 ? `<div class="calc-row"><div class="calc-label">Congestion charge<br><span class="calc-formula">£15/day × ${congestionDays} days × 3 yrs (electric exempt)</span></div><div class="calc-value">£${co.congestion.toLocaleString()}</div></div>` : ''}
@@ -1921,8 +1929,8 @@ function openModal(idx) {
   const costs = calcCarCosts(car);
   const backdrop = document.getElementById('modalBackdrop');
   const body = document.getElementById('modalBody');
-  const usedBtn = (!car.usedAge && !car.salSac) ? `<button class="btn-used-variant" onclick="addUsedVariant(${idx})" title="Add a 1-year-old used version to compare">+ Add 1yr Used</button>` : '';
-  body.innerHTML = `<button class="modal-edit-btn" onclick="editCar(${idx})" title="Edit this car">✎</button>${usedBtn}` + buildDetailPanel(car, costs, idx);
+  const usedBtns = (!car.usedAge && !car.salSac) ? `<div class="used-variant-btns"><button class="btn-used-variant" onclick="addUsedVariant(${idx},1)" title="Add a 1-year-old used version">+ 1yr Used</button><button class="btn-used-variant" onclick="addUsedVariant(${idx},3)" title="Add a 3-year-old used version">+ 3yr Used</button></div>` : '';
+  body.innerHTML = `<button class="modal-edit-btn" onclick="editCar(${idx})" title="Edit this car">✎</button>${usedBtns}` + buildDetailPanel(car, costs, idx);
   backdrop.classList.add('open');
   document.body.style.overflow = 'hidden';
 }
@@ -1937,36 +1945,51 @@ document.addEventListener('keydown', function(e) {
 });
 
 // ============ USED CAR VARIANT ============
-function addUsedVariant(idx) {
+function addUsedVariant(idx, age) {
   const car = cars[idx];
-  if (!car) return;
+  if (!car || !age) return;
 
-  // Year 1 depreciation is ~55% of the total 3-year depreciation
-  const yr1DepFraction = 0.55;
-  const yr1DepPct = car.depreciationPct * yr1DepFraction;
-  const usedPrice = Math.round(car.price * (1 - yr1DepPct / 100));
+  // Depreciation curve: year 1 ~55% of 3yr total, year 2 ~25%, year 3 ~20%
+  // For a car with X% total 3yr depreciation from new:
+  const depTotal3yr = car.depreciationPct / 100; // as fraction of new price
 
-  // Remaining depreciation for years 2-4 as % of the USED purchase price
-  // Years 2-3 eat remaining 45% of original 3yr dep, year 4 adds ~12% of original
-  const remainingDepFromNew = car.price * (car.depreciationPct / 100) * 0.45;
-  const yr4DepFromNew = car.price * (car.depreciationPct / 100) * 0.12;
-  const usedDepTotal = remainingDepFromNew + yr4DepFromNew;
-  const usedDepPct = Math.min(60, Math.round((usedDepTotal / usedPrice) * 100));
+  let priceDropFromNew, usedDepPct;
+  if (age === 1) {
+    // 1yr old: lost ~55% of the 3yr depreciation already
+    priceDropFromNew = depTotal3yr * 0.55;
+    // Remaining 3yr ownership (years 2-4): ~45% of original 3yr dep + ~12% for year 4
+    const remainingDep = car.price * depTotal3yr * 0.45;
+    const yr4Dep = car.price * depTotal3yr * 0.12;
+    const usedPrice = car.price * (1 - priceDropFromNew);
+    usedDepPct = Math.min(60, Math.round(((remainingDep + yr4Dep) / usedPrice) * 100));
+  } else {
+    // 3yr old: lost full 3yr depreciation already
+    priceDropFromNew = depTotal3yr;
+    // Years 4-6 from new: depreciation slows significantly, ~8-10% of original per year
+    const usedPrice = car.price * (1 - priceDropFromNew);
+    const annualDepLate = car.price * 0.06; // ~6% of original price per year in years 4-6
+    const totalDepUsed = annualDepLate * 3;
+    usedDepPct = Math.min(50, Math.round((totalDepUsed / usedPrice) * 100));
+  }
 
-  // Insurance ~5% cheaper for 1yr old
-  const usedInsurance = Math.round(car.annualInsurance * 0.95);
+  const usedPrice = Math.round(car.price * (1 - priceDropFromNew));
+  // Insurance: ~5% cheaper per year of age
+  const usedInsurance = Math.round(car.annualInsurance * (1 - age * 0.05));
+  // Service: slightly more for older cars
+  const usedService = age >= 3 ? Math.round(car.annualService * 1.15) : car.annualService;
 
+  const label = age + 'yr';
   const usedCar = {
-    name: car.name + ' (1yr Used)',
+    name: car.name + ' (' + label + ' Used)',
     make: car.make,
     fuel: car.fuel,
     body: car.body,
     price: usedPrice,
     originalNewPrice: car.price,
-    usedAge: 1,
+    usedAge: age,
     efficiency: car.efficiency,
     co2: car.co2,
-    annualService: car.annualService,
+    annualService: usedService,
     depreciationPct: usedDepPct,
     annualInsurance: usedInsurance
   };
